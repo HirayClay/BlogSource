@@ -6,6 +6,9 @@ tags:
     - 博客
 ---
 很早之前就有人用hexo和github提供的page服务做个人博客了,不过了解一下就没有怎么关注了，最近有时间，看了一下官方文档，花了两个多小时，搭建了一个简单的个人博客，除了最开始搭建配置繁琐一点，后面写完一篇文章一个命令就发布，体验非常棒！
+### 新建主页仓库
+登录自己的github账户，新建一个仓库，比如我的用户名是HirayClay，那么我就新建一个名为
+HirayClay.github.io的仓库
 
 ### hexo环境搭建
 
@@ -78,7 +81,7 @@ new_post_name 即生成的post的名称，有一下几个配置：
     tab_replace:
 ```
 
-部署配置
+部署配置，第一步新建仓库的作用到了
 ```yaml
   deploy:
   type: git
@@ -86,7 +89,7 @@ new_post_name 即生成的post的名称，有一下几个配置：
   branch: master
 ```
 
-因为我们用的git提交到远程仓库的，所以type = git,以及仓库地址和分支名
+因为我们用的git提交到远程仓库的，所以type = git,以及仓库地址和分支名，这里的repo就是之前新建的仓库地址
 
 
 配置说完了，基本可以开写了
@@ -117,7 +120,7 @@ new_post_name 即生成的post的名称，有一下几个配置：
     hexo server
 ```
 
-浏览器输入http://localhost:4000进行查看
+浏览器输入http://localhost:4000 进行查看
 
 
 用以下命令发布到git远程仓库
@@ -128,7 +131,9 @@ new_post_name 即生成的post的名称，有一下几个配置：
 应该会弹出一个窗口让你你输入ssh-key的密码
 
 
-最后如果觉得默认主题不合适，可以去下载其他[主题]()到 themes目录下，可以随意命名该目录下的主题文件夹，但是最后在_config.yml文件中配置主题时候一定要用文件夹的名字
+最后如果觉得默认主题不合适，可以去下载其他[主题](https://hexo.io/themes/)到 themes目录下，可以随意命名该目录下的主题文件夹，但是最后在_config.yml文件中配置主题时候一定要用文件夹的名字
 ```yaml
     theme: theme_folder_name
 ```
+
+The End

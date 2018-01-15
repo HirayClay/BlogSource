@@ -14,12 +14,12 @@ Groovy可以动态生成字符串，比如模板是这样的'${name} is ${age} y
 ```java
     Spanny spanny = new Spanny("距离审核还有")
                 .append("6", new ForegroundColorSpan(Color.RED))
-                .append("结束！");
+                .append("天结束！");
     textView.setText(spanny);
 ```
 
 
-对比我们定义好一个模板 "距离审核还有${day}天结束"，比较一下就看出不同了。Spanny的做法是希望需要什么样的Span就自己拼一个，虽然配合链式调用挺舒服的，其实语义上就很乱，个人觉得还是Groovy这样的模板实在，毕竟当需要处理Span的时候，结构都是死的，所以用模板定义好结构是没有问题的，特别是当要处理的文字比较多的时候，这样拼接我觉得不太好，用定义的模板一眼看过去就非常的清晰明了。
+对比我们定义好一个模板 "距离审核还有${day}天结束"，比较一下就看出不同了。Spanny的做法是希望需要什么样的Span就自己拼一个，虽然配合链式调用挺舒服的，其实给人的感觉就是很分离，并不像一句完整的句子那么看起来实在，个人觉得还是Groovy这样的模板很合适，毕竟当需要处理Span的时候，结构都是死的，所以用模板定义好结构是没有问题的，特别是当要处理的文字比较多的时候，这样拼接我觉得不太好，用定义的模板一眼看过去就非常的清晰明了。
 
 
 
@@ -29,7 +29,7 @@ Groovy可以动态生成字符串，比如模板是这样的'${name} is ${age} y
 2 如何替换key并生成结果字符串
 3 如何解决以上两个问题
 
-关于第一个问题，看了下groovy解析模板的代码，自己做了一下修改
+关于第一个问题，看了下groovy解析模板的代码，自己做了一下修改差不多就是抄过来的，只是加入了一些额外的逻辑)
 最后解析模板的代码是这样的：
 ```java
 List<MarkInfo> parseAndMark(Reader reader, Map<String, String> binding) {
@@ -106,3 +106,5 @@ List<MarkInfo> parseAndMark(Reader reader, Map<String, String> binding) {
 我们来简单分析一下代码，一个简单的while循环，每次读取一个字符，每当读到'$'字符时认为可能是key要出现了，所以先在此处标记一下紧接着读取下一个字符，如果读到下一个字符是'{'则认为key出现了，调用findKey方法读取'{'和'}'之间的key值，如果为空则认为没有key，仅仅是读到了一个普通的"${}"，并且写入writer保存起来，如果key不为空认为读取到有效的key，记录key对应的value在字符串中的位置等信息，并且将value写入writer保存起来；如果'$'后面读到的不是'}'则认为只是读到了一个单独的'$'字符，虚惊一场，写入writer保存起来，并且把reader 重置，回到刚才标记的地方，也就是'$'的位置；如果读取的是普通的字符，直接写入writer.另外要说的就是ImageSpan的处理，由于有些字符最后是要替换成图片的，所以在binding中是没有其对应value的，所以当读取的key在binding中如果没有value，就认为这个key是要被替换成图片的，所以直接用key代替value，直接把key写入writer保存起来。
 
 解析这一步完成以后我们其实得到了一个List<MarkerInfo>，记录了key被替换成value后的value在结果字符串中的位置信息，以及原始的key等信息。有了这些重要信息，就可以根据下标施加对应的Span了，以及一些点击事件的监听了。
+
+施加Span的时候需要考虑文字和ImageSpan的差别，绝大多数时候是对文字的处理，不过有一种是把文字替换成图像，所以这个key在bingding中对应的就是个null,所以在施加span的时候都会判断一下是否为空，为空则说明是个ImageSpan,就不会做除了ImageSpan之外的任何处理
