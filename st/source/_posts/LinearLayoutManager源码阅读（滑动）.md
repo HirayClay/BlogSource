@@ -134,7 +134,7 @@ mExtra 在LayoutManager支持predictive动画的时候这个值很有用，具�
         }
  ```
  4.给mOffset赋值，也就是下图最后一个item的bottom值，是后续依次放child的起始坐标
- ![](RV_LLM.png)
+ ![](https://github.com/HirayClay/draft/blob/master/RV_LLM.png?raw=true)
 
  5.至于scrollingOffset就是上面这张图里面最后一个item底部距离RV底部的距离，官方也有注释----"不需要添加新的children的情况下滚动的最大距离"-----也就是说最后一个item刚好完全滚进来，但是又不会有新的item滚进来的意思
 
@@ -260,5 +260,19 @@ mExtra 在LayoutManager支持predictive动画的时候这个值很有用，具�
  mIgnoreConsumed 是否忽略此次消耗的距离，滑动情况下这个值一直都是false
  mFocusable 当前item是否有焦点
 
- 
+ layoutChunk方法里面的逻辑，也没什么，就是测量，然后计算left top right bottom值。有一段逻辑比较重要，判断了mScrapList 是否为null，如果是null就调用了addDisappearingView方法，反之调用了addView;addView方法不用说就是简单的添加了View，但是addDisappearingView就是告诉RV，添加的这个View是马上就要移出屏幕的，注意是不可见了并不代表就是item被移除了也有可能是在屏幕之外。好了，我们再回头想象为什么是判断mScrapList为null就调用addDisappearingView。具体原因是mScapList其实绝大部分情况都是null，只有发生layout时候才不为空，而这个时候都是发生了item的增删改操作，导致有些View可能会超出RV的边界，也就是变成所谓的“hidden view”，不要被这个方法名迷惑，只是尝试加入hidden view，方法内部实际还是会根据flag判断之后决定是否需要hide 这个view。反过来mScrapList为null的时候就是对应滑动情况。
 
+layoutChunk 方法内容不多，另外还需要注意的是这句：
+```java
+    if (params.isItemRemoved() || params.isItemChanged()) {
+            result.mIgnoreConsumed = true;
+        }
+```
+ 意思很简单，就是Item被删除了或者变化了，就忽略消耗，也就是不计入消耗。最开始我也觉得奇怪，后来知道动画之后明白这么做是有意义的，虽然这个Item被删除了，但是你不能立马就给不显示了还是添加进来，毕竟还有动画在这个Item要执行，所以就得等到这个Item的动画完了才删除。那么不计入消耗的好处就是，会多layout一个Item出来，就是在底部，屏幕外面，虽然不可见，如图：
+ ![](https://github.com/HirayClay/draft/blob/master/rv_removed.png?raw=true)
+ item 2已经被移除了，并且item5会被加进来，但是在屏幕外我们看不到，等到item2动画结束item5就会滑进来。当然这个if判断在滑动情况下是不会进来的。
+
+ 最后，所有的view添加完之后，其实view并没有在正确的位置，所以整体又进行平移，至此整个滑动流程都结束
+
+
+the end

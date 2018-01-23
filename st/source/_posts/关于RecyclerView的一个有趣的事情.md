@@ -1,8 +1,8 @@
 ---
 title: 关于RecyclerView的一个有趣的事情
 date: 2018-01-19 15:22:22
-tags: - RecyclerView 
-      - Android
+tags: -RecyclerView 
+      -Android
 ---
 对于RecylcerView ，基本上第一印象就是View重用，但是真的明白怎么重用的吗，最近在写自定义LayoutManager,由此对RecylerView、LayoutManager、ItemAnimator整个之间的关系都比较的熟悉。不过回到标题上来，这个有趣的事情和RV的回收有关。
 
@@ -35,3 +35,5 @@ tags: - RecyclerView
 ```
 
 因为当滑动发生的时候，填充的postion是从第七个Item开始的，所以第七个Item被创建了，但是呢，立马被 recycleByLayoutState(recycler, layoutState)这个方法给回收掉了，并且缓存了起来，毕竟第七个Item在屏幕外，所以被回收了，而且这个while跑了这一次就退出了，到了第七个Item真的出来的时候就直接从缓存里面取出来用了
+
+Note："scrap" View指的是仍然有效可以直接拿来重用的VH，只是暂时脱离了RV。名字让人很误解。
