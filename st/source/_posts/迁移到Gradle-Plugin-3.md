@@ -96,4 +96,13 @@ Required by:
 }
 ```
 
-注意的是，尽管这些手动指定依赖的API仍然还可以用，但是最好不要用。因为使用project() dsl语法提供的依赖 必须和 使用依赖者 在buildType和flavor 以及其他属性上匹配。举个栗子，比如让一个debug变体去使用一个release变体是不可能
+注意的是，尽管这些手动指定依赖的API仍然还可以用，但是最好不要用。因为使用project() dsl语法提供的依赖 必须和 使用依赖者 在buildType和flavor 以及其他属性上匹配。举个栗子，比如让一个debug变体去使用一个release变体是不可能的。
+
+说说新的语法和之前的区别：
+implementation对应之前的compile 但是有一点不同----不会暴露内部的依赖，举个栗子，比如module A依赖module B ，同时module B使用了类库 X，并且是用的implementation语法依赖的X,那么即使module A依赖了module B，类库X对module A也是不可见的。这样的好处是可以加快编译速度，因为如果X发生变化仅仅需要 重新编译X和依赖X的 module B就可以了
+
+api 对应compile,和之前的compile是完全一样的，会暴露内部依赖
+
+compileOnly 对应 provided
+
+runtimeOnly 对应apk(好吧，之前都不知道有apk这个dsl)
