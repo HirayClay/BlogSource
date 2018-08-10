@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  
+  <meta name="keywords" content="Android Blog">
+  <meta name="description" content="hirayclay&#39;s Android Blog site">
+  
+  <title>Blog</title>
+  
+    <!-- stylesheets list from config.yml -->
+    
+      <link rel="stylesheet" href="/css/materialize.min.css">
+    
+      <link rel="stylesheet" href="/css/main.min.css">
+    
+  
+  <style type="text/css">
+      html{
+          font-family: sans-serif;
+          font-weight: 300;
+      }
+      @font-face {
+          font-family: 'Material Icons';
+          font-style: normal;
+          font-weight: 400;
+          src: url(/fonts/MaterialIcons-Regular.eot);
+          src: url(/fonts/MaterialIcons-Regular.woff2) format('woff2'),
+          url(/fonts/MaterialIcons-Regular.woff) format('woff'),
+          url(/fonts/MaterialIcons-Regular.ttf) format('truetype')
+      }
+  </style>
+<link rel="stylesheet" href="/css/prism.css" type="text/css">
+<link rel="stylesheet" href="/css/prism-line-numbers.css" type="text/css"></head>
+<body>
+<div id="menu-box"><a href="javascript:void(0)" id="menu" data-activates="slide-out" class="button-collapse menu" ><span class="nav-btn"></span></a></div>
+<div id="menu-outer">
+  <div id="menu-inner">
+      <ul id="slide-out" class="side-nav" >
+    <div class="nav-header"  style="background-image: url(/images/header-bg.png);background-color:#26A69A">
+    <div class="header-box"><img src="/images/header.png" ondragstart="return false;"></div>
+    <p>hirayclay</p>
+    <div class="nav-link">
+        
+        
+        <a  href="https://github.com/HirayClay" target="_blank"><div class="link-box github"></div></a>
+        
+        
+        <a href="mailto:2425875132@qq.com"><div class="link-box email"></div></a>
+        
+        
+        
+    </div>
+    <div class="nav-search">
+        <form id="search-form"> <!-- 搜索框相关 -->
+            <input type="text" id="local-search-input" name="q" results="0" placeholder="搜索..." class="search form-control" autocomplete="off" autocorrect="off"/>
+            <div class="nav-search-img"><i class="material-icons">search</i></div>
+        </form>
+        <div id="local-search-result"></div> <!-- 搜索结果区 -->
+        <p class='no-result'>无搜索结果</p>
+    </div>
+</div>
+    <!--Homepage-->
+
+<li class="nav-list">
+    <a href="/" target="_self">
+        <div class="nav-ico"><i class="material-icons">home</i> </div><p>主页</p>
+    </a>
+</li>
+
+<!--archives-->
+
+<li class="nav-list dropdown-btn">
+    <a  class=""  target="_self">
+        <div class="nav-ico"><i class="material-icons">assignment</i></div><p>归档</p><div class="dropdown-ico"><i class="material-icons">arrow_drop_down</i></div>
+    </a>
+</li>
+
+<ul class="dropdown-menu dropdown" >
+    <li class="nav-dropdown-list">
+        <a class="archive-link" href="/archives/2018/04/">April 2018<span class="archive-count">3</span></a></li><li class="nav-dropdown-list"><a class="archive-link" href="/archives/2018/01/">January 2018<span class="archive-count">5</span></a></li><li class="nav-dropdown-list"><a class="archive-link" href="/archives/2017/12/">December 2017<span class="archive-count">1</span></a></li><li class="nav-dropdown-list"><a class="archive-link" href="/archives/2017/09/">September 2017<span class="archive-count">2</span></a>
+    </li>
+</ul>
+<!--categories-->
+
+<ul class="dropdown-menu dropdown" >
+    <li class="nav-dropdown-list">
+        
+    </li>
+</ul>
+<!--tags-->
+
+<li class="nav-list">
+    <a href="/archives" target="_self">
+        <div class="nav-ico"><i class="material-icons">bookmark</i> </div><p>标签</p>
+    </a>
+</li>
+
+<!--photo-->
+
+<!--friends-->
+
+<!--about-->
+
+
+</ul>
+
+  </div>
+</div>
+
+<div id="content-outer">
+  <div id="content-inner">
+    
+<article id="post">
+  <div class="post-page-title"  style="background-color:#26A69A;background-image:url(/images/random/vateral-10.png)" >
+  <h2>Hexo+github搭建个人博客</h2>
+    
+  <p>作者:hirayclay &nbsp&nbsp 发布于:<time datetime="2017-09-05T06:04:10.000Z">
+          2017-09-05
+    </time>
+  </p>
+    
+  </div>
+  <div class="post-page-content">
+  <p>很早之前就有人用hexo和github提供的page服务做个人博客了,不过了解一下就没有怎么关注了，最近有时间，看了一下官方文档，花了两个多小时，搭建了一个简单的个人博客，除了最开始搭建配置繁琐一点，后面写完一篇文章一个命令就发布，体验非常棒！</p>
+<h3 id="新建主页仓库"><a href="#新建主页仓库" class="headerlink" title="新建主页仓库"></a>新建主页仓库</h3><p>登录自己的github账户，新建一个仓库，比如我的用户名是HirayClay，那么我就新建一个名为<br>HirayClay.github.io的仓库</p>
+<h3 id="hexo环境搭建"><a href="#hexo环境搭建" class="headerlink" title="hexo环境搭建"></a>hexo环境搭建</h3><p>首先要安装必要的软件，<a href="https://nodejs.org" target="_blank" rel="external">Node.js</a>和<a href="https://git-scm.com/" target="_blank" rel="external">Git</a>,安装完成之后安装hexo</p>
+<pre class="line-numbers language-shell"><code class="language-shell">   $ npm install -g hexo-cli
+<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<p>我安装的是 3.3.3版本<br>hexo安装好之后就可以用hexo命令创建一个站点了</p>
+<pre class="line-numbers language-shell"><code class="language-shell">    $ hexo init <folder_name>
+    $ cd <folder>
+    $ npm install
+<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
+<p>看一下创建的目录结构</p>
+<pre><code>    .
+    ├── _config.yml
+    ├── package.json
+    ├── scaffolds
+    ├── source
+    |   └── _posts
+    └── themes
+</code></pre><p>其中_config.yml是配置文件，一些全局的重要配置都在这里面；package.json文件中声明了版本信息和依赖信息，scaffolds，即脚手架的意思，我们创建post的时候就是用的这个文件下的模板，里面默认有三种模板：draft、page、post，当然你也可以创建自己的模板；source目录下有个子目录_posts，顾名思义就是放我们文章的地方；最后themes就是存放主题的地方，可以下载三方的主题放在里面</p>
+<p>我们需要重点关注一下_config.yml文件里面几个地方</p>
+<pre class="line-numbers language-yaml"><code class="language-yaml">    <span class="token key atrule">title</span><span class="token punctuation">:</span> Blog
+    <span class="token key atrule">subtitle</span><span class="token punctuation">:</span> hirayclay's blog
+    <span class="token key atrule">description</span><span class="token punctuation">:</span>
+    <span class="token key atrule">author</span><span class="token punctuation">:</span> hirayclay
+    <span class="token key atrule">language</span><span class="token punctuation">:</span> zh
+    <span class="token key atrule">timezone</span><span class="token punctuation">:</span> Asia/Shanghai
+<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>title：站点的标题，subtitle：站点子标题，description：站点描述 language:站点语言，这里配置的是中文，其他语言的参考这里<a href="https://en.wikipedia.org/wiki/List_of_ISO_639-1_codes" target="_blank" rel="external">&gt;&gt;</a>,timezone即时区，这里用的中国北京时区，其他时区参考<a href="https://en.wikipedia.org/wiki/List_of_tz_database_time_zones" target="_blank" rel="external">&gt;&gt;</a></p>
+<p>要注意一点的是，这里所有的配置“：”后面都需要有一个空格，不然最后解析生成时候会失败，这是YAML的语法</p>
+<pre class="line-numbers language-yaml"><code class="language-yaml">    <span class="token key atrule">new_post_name</span><span class="token punctuation">:</span> <span class="token punctuation">:</span>title
+    <span class="token key atrule">default_layout</span><span class="token punctuation">:</span> post
+<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
+<p>new_post_name 即生成的post的名称，有一下几个配置：<br>:title<br>:year<br>:month<br>:i_month<br>:day<br>:i_day<br>我这里直接用title命名生成的post文件</p>
+<p>比如执行一下命令</p>
+<pre class="line-numbers language-shell"><code class="language-shell">    hexo new post "MyNewPost"
+<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<p>就会在source/_posts目录下生成 MyNewPost.md文件</p>
+<p>再看下语法高亮配置，比较简单，常用到的是否禁用和代码行数</p>
+<pre class="line-numbers language-yaml"><code class="language-yaml">    <span class="token key atrule">highlight</span><span class="token punctuation">:</span>
+    <span class="token key atrule">enable</span><span class="token punctuation">:</span> <span class="token boolean important">false</span>
+    <span class="token key atrule">line_number</span><span class="token punctuation">:</span> <span class="token boolean important">true</span>
+    <span class="token key atrule">auto_detect</span><span class="token punctuation">:</span> <span class="token boolean important">false</span>
+    <span class="token key atrule">tab_replace</span><span class="token punctuation">:</span>
+<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>部署配置，第一步新建仓库的作用到了</p>
+<pre class="line-numbers language-yaml"><code class="language-yaml">  <span class="token key atrule">deploy</span><span class="token punctuation">:</span>
+  <span class="token key atrule">type</span><span class="token punctuation">:</span> git
+  <span class="token key atrule">repo</span><span class="token punctuation">:</span> git@github.com<span class="token punctuation">:</span>HirayClay/HirayClay.github.io.git
+  <span class="token key atrule">branch</span><span class="token punctuation">:</span> master
+<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span></span></code></pre>
+<p>因为我们用的git提交到远程仓库的，所以type = git,以及仓库地址和分支名，这里的repo就是之前新建的仓库地址</p>
+<p>配置说完了，基本可以开写了</p>
+<p>首先 用 hexo new post <your_post_name> 创建一篇博客，然后source/_posts目录找到对应的博客打开编辑即可,可以给博客加tag，比如本博客的tag</your_post_name></p>
+<pre class="line-numbers language-yaml"><code class="language-yaml">   <span class="token punctuation">---</span>
+    <span class="token key atrule">title</span><span class="token punctuation">:</span> Hexo+github搭建个人博客
+    <span class="token key atrule">date</span><span class="token punctuation">:</span> <span class="token datetime number">2017-09-05 14:04:10</span>
+    <span class="token key atrule">tags</span><span class="token punctuation">:</span>
+        <span class="token punctuation">-</span> hexo
+        <span class="token punctuation">-</span> 博客
+    <span class="token punctuation">---</span>
+<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>至此基本的都配置完成了，用以下命令生成静态资源</p>
+<pre class="line-numbers language-shell"><code class="language-shell">    hexo generate
+<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<p>也可以写成</p>
+<pre class="line-numbers language-shell"><code class="language-shell">    hexo g
+<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<p>然后可以本地起一个服务进行预览</p>
+<pre class="line-numbers language-shell"><code class="language-shell">    hexo server
+<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<p>浏览器输入<a href="http://localhost:4000" target="_blank" rel="external">http://localhost:4000</a> 进行查看</p>
+<p>用以下命令发布到git远程仓库</p>
+<pre class="line-numbers language-shell"><code class="language-shell">    hexo deploy
+<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<p>应该会弹出一个窗口让你你输入ssh-key的密码</p>
+<p>最后如果觉得默认主题不合适，可以去下载其他<a href="https://hexo.io/themes/" target="_blank" rel="external">主题</a>到 themes目录下，可以随意命名该目录下的主题文件夹，但是最后在_config.yml文件中配置主题时候一定要用文件夹的名字</p>
+<pre class="line-numbers language-yaml"><code class="language-yaml">    <span class="token key atrule">theme</span><span class="token punctuation">:</span> theme_folder_name
+<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<p>The End</p>
+
+  </div>
+  <!--评论块-->
+    
+
+</article>
+<nav class="post-nav">
+  <!-- Prev Nav -->
+    
+  <a href="/2017/12/19/LinearLayoutManager源码阅读（滑动）/" id="post_nav-newer" class="post-nav-content prev-content">
+      新篇
+  </a>
+    
+
+
+  <!-- Next Nav -->
+    
+  <a href="/2017/09/05/SpanTextView/" id="post_nav-older" class="post-nav-content next-content">
+      旧篇
+  </a>
+    
+</nav>
+<div class="post-toc-btn"><i class="material-icons">format_list_numbered</i></div>
+<div class="post-toc-none"><p>(无)</p></div>
+<div class="post-toc-box">
+    <ol class="post-toc"><li class="post-toc-item post-toc-level-3"><a class="post-toc-link" href="#新建主页仓库"><span class="post-toc-number">1.</span> <span class="post-toc-text">新建主页仓库</span></a></li><li class="post-toc-item post-toc-level-3"><a class="post-toc-link" href="#hexo环境搭建"><span class="post-toc-number">2.</span> <span class="post-toc-text">hexo环境搭建</span></a></li></ol>
+</div>
+<!--<div class="post-back"><i class="material-icons">arrow_back</i></div>-->
+<script type="text/javascript">
+    menu();
+</script>
+  </div>
+</div>
+<div id="bottom-outer">
+  <div id="bottom-inner">
+    <a  id="top-button" onfocus="this.blur();"><div class="up upinbody" style="background-color:#26A69A"><i class="material-icons material-up">vertical_align_top</i></div></a>
+
+
+<p style="line-height: 45px">Copyright ©  2017  Blog</p>
+<p style="line-height: 45px">Powered by <a href="https://hexo.io/" target="_blank"> Hexo </a> && Theme - <a href="https://github.com/moumao/hexo-theme-Vateral" target="_blank">Vateral</a></p>
+
+  </div>
+</div>
+
+<!--影集界面需要的资源-->
+
+
+
+<!-- scripts list from theme config.yml -->
+
+<script src="/js/jquery-3.1.1.min.js"></script>
+
+<script src="/js/materialize.min.js"></script>
+
+<script src="/js/main.min.js"></script>
+
+
+<script>
+    NProgress.start();
+    NProgress.done();
+    lazy();
+    links();
+    window.onpopstate = menu();
+    //pjax操作
+    $(document).pjax('a:not(.nopjax)', '#content-inner', {fragment:'#content-inner', timeout:8000});
+    $(document).on('pjax:start', NProgress.start).on('pjax:end', NProgress.done)
+        .on('pjax:end', () => {
+            dowmdiv();
+            lazy();
+            toc();
+            links();
+            menu();
+        });
+</script>
+
+</body>
+</html>

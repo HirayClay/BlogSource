@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  
+  <meta name="keywords" content="Android Blog">
+  <meta name="description" content="hirayclay&#39;s Android Blog site">
+  
+  <title>Blog</title>
+  
+    <!-- stylesheets list from config.yml -->
+    
+      <link rel="stylesheet" href="/css/materialize.min.css">
+    
+      <link rel="stylesheet" href="/css/main.min.css">
+    
+  
+  <style type="text/css">
+      html{
+          font-family: sans-serif;
+          font-weight: 300;
+      }
+      @font-face {
+          font-family: 'Material Icons';
+          font-style: normal;
+          font-weight: 400;
+          src: url(/fonts/MaterialIcons-Regular.eot);
+          src: url(/fonts/MaterialIcons-Regular.woff2) format('woff2'),
+          url(/fonts/MaterialIcons-Regular.woff) format('woff'),
+          url(/fonts/MaterialIcons-Regular.ttf) format('truetype')
+      }
+  </style>
+<link rel="stylesheet" href="/css/prism.css" type="text/css">
+<link rel="stylesheet" href="/css/prism-line-numbers.css" type="text/css"></head>
+<body>
+<div id="menu-box"><a href="javascript:void(0)" id="menu" data-activates="slide-out" class="button-collapse menu" ><span class="nav-btn"></span></a></div>
+<div id="menu-outer">
+  <div id="menu-inner">
+      <ul id="slide-out" class="side-nav" >
+    <div class="nav-header"  style="background-image: url(/images/header-bg.png);background-color:#26A69A">
+    <div class="header-box"><img src="/images/header.png" ondragstart="return false;"></div>
+    <p>hirayclay</p>
+    <div class="nav-link">
+        
+        
+        <a  href="https://github.com/HirayClay" target="_blank"><div class="link-box github"></div></a>
+        
+        
+        <a href="mailto:2425875132@qq.com"><div class="link-box email"></div></a>
+        
+        
+        
+    </div>
+    <div class="nav-search">
+        <form id="search-form"> <!-- 搜索框相关 -->
+            <input type="text" id="local-search-input" name="q" results="0" placeholder="搜索..." class="search form-control" autocomplete="off" autocorrect="off"/>
+            <div class="nav-search-img"><i class="material-icons">search</i></div>
+        </form>
+        <div id="local-search-result"></div> <!-- 搜索结果区 -->
+        <p class='no-result'>无搜索结果</p>
+    </div>
+</div>
+    <!--Homepage-->
+
+<li class="nav-list">
+    <a href="/" target="_self">
+        <div class="nav-ico"><i class="material-icons">home</i> </div><p>主页</p>
+    </a>
+</li>
+
+<!--archives-->
+
+<li class="nav-list dropdown-btn">
+    <a  class=""  target="_self">
+        <div class="nav-ico"><i class="material-icons">assignment</i></div><p>归档</p><div class="dropdown-ico"><i class="material-icons">arrow_drop_down</i></div>
+    </a>
+</li>
+
+<ul class="dropdown-menu dropdown" >
+    <li class="nav-dropdown-list">
+        <a class="archive-link" href="/archives/2018/04/">April 2018<span class="archive-count">3</span></a></li><li class="nav-dropdown-list"><a class="archive-link" href="/archives/2018/01/">January 2018<span class="archive-count">5</span></a></li><li class="nav-dropdown-list"><a class="archive-link" href="/archives/2017/12/">December 2017<span class="archive-count">1</span></a></li><li class="nav-dropdown-list"><a class="archive-link" href="/archives/2017/09/">September 2017<span class="archive-count">2</span></a>
+    </li>
+</ul>
+<!--categories-->
+
+<ul class="dropdown-menu dropdown" >
+    <li class="nav-dropdown-list">
+        
+    </li>
+</ul>
+<!--tags-->
+
+<li class="nav-list">
+    <a href="/archives" target="_self">
+        <div class="nav-ico"><i class="material-icons">bookmark</i> </div><p>标签</p>
+    </a>
+</li>
+
+<!--photo-->
+
+<!--friends-->
+
+<!--about-->
+
+
+</ul>
+
+  </div>
+</div>
+
+<div id="content-outer">
+  <div id="content-inner">
+    
+<article id="post">
+  <div class="post-page-title"  style="background-color:#26A69A;background-image:url(/images/random/vateral-12.png)" >
+  <h2>关于事件机制的总结</h2>
+    
+  <p>作者:hirayclay &nbsp&nbsp 发布于:<time datetime="2018-04-19T08:24:05.000Z">
+          2018-04-19
+    </time>
+  </p>
+    
+  </div>
+  <div class="post-page-content">
+  <p>事件分发影响到自定义控件以及处理一些特殊问题时候特别有用，一直没有总结一下，导致<br>在碰到问题的时候思路不够清晰，其实对于单个View的事件分发其实很简单，稍微复杂点的其实<br>是在有ViewGroup的情况下。也不用举什么例子，直接就总结吧：<br>针对单个View<br>所有的事件都从ACTION_DOWN开始，入口是dispatchTouchEvent,因为对于单个View没有拦截之说，所以在dispatchTouchEvent里面只是判断View有没有设置touch监听或者点击，如果有，那么事件就接管了，后续的事件都会直接发给这个View</p>
+<p>针对ViewGroup：<br>一共有三个方法 dispatchTouchEvent onInterceptTouchEvent onTouchEvent,主要是说清楚这三个方法之间的关系</p>
+<p>dispatchTouch一样是入口，同样是从ACTION_DOWN开始，先是在dispatchTouchEvent里面调用了onInterceptTouchEvent，问ViewGroup自己需要拦截吗，如果拦截了，那么后续事件就交给ViewGroup的onTouchEvent,当然后续事件调用的方法顺序就是：dispatchTouchEvent(ViewGroup)————&gt;onTouchEvent(ViewGroup);但是如果ACTION_DOWN事件被子View接管了，那么后续事件的调用的顺序：<br>dispatchTouchEvent(ViewGroup)————&gt;onInterceptTouchEvent(ViewGroup)————&gt;onTouchEvent(View)<br>但是如果View接管了事件，但是后续事件被ViewGroup拦截了的话，那么View还是会收到一个Cancel事件</p>
+<p>以上的总结本身在ViewGroup的onInterceptTouchEvent方法中有注释，之前没耐心看，最近因为和事件分发走的近，必须好好看懂这一块</p>
+<p>总之View只有一次机会来接管事件，也就是在ACTION_DOWN传过来的时候，不然以后都没机会了，直到下一次ACTION_DOWN来临。假如谁都不管这个事件，那么最后就会一直冒泡到Activity的onTouchEvent中去（这个很好验证，写个空白布局，重写下Activity的onTouchEvent，里面打个日志就知道了 ）因为如此，Android也推出了嵌套滚动，其实就是让子View无脑接管事件，但是呢，会在处理事件前先给parent处理，然后剩下的给自己，这样就让有些不好实现的效果（比如联动）好做很多</p>
+
+  </div>
+  <!--评论块-->
+    
+
+</article>
+<nav class="post-nav">
+  <!-- Prev Nav -->
+    
+
+
+  <!-- Next Nav -->
+    
+  <a href="/2018/04/11/关于DataBinding的一些知识/" id="post_nav-older" class="post-nav-content next-content">
+      旧篇
+  </a>
+    
+</nav>
+<div class="post-toc-btn"><i class="material-icons">format_list_numbered</i></div>
+<div class="post-toc-none"><p>(无)</p></div>
+<div class="post-toc-box">
+    
+</div>
+<!--<div class="post-back"><i class="material-icons">arrow_back</i></div>-->
+<script type="text/javascript">
+    menu();
+</script>
+  </div>
+</div>
+<div id="bottom-outer">
+  <div id="bottom-inner">
+    <a  id="top-button" onfocus="this.blur();"><div class="up upinbody" style="background-color:#26A69A"><i class="material-icons material-up">vertical_align_top</i></div></a>
+
+
+<p style="line-height: 45px">Copyright ©  2017  Blog</p>
+<p style="line-height: 45px">Powered by <a href="https://hexo.io/" target="_blank"> Hexo </a> && Theme - <a href="https://github.com/moumao/hexo-theme-Vateral" target="_blank">Vateral</a></p>
+
+  </div>
+</div>
+
+<!--影集界面需要的资源-->
+
+
+
+<!-- scripts list from theme config.yml -->
+
+<script src="/js/jquery-3.1.1.min.js"></script>
+
+<script src="/js/materialize.min.js"></script>
+
+<script src="/js/main.min.js"></script>
+
+
+<script>
+    NProgress.start();
+    NProgress.done();
+    lazy();
+    links();
+    window.onpopstate = menu();
+    //pjax操作
+    $(document).pjax('a:not(.nopjax)', '#content-inner', {fragment:'#content-inner', timeout:8000});
+    $(document).on('pjax:start', NProgress.start).on('pjax:end', NProgress.done)
+        .on('pjax:end', () => {
+            dowmdiv();
+            lazy();
+            toc();
+            links();
+            menu();
+        });
+</script>
+
+</body>
+</html>

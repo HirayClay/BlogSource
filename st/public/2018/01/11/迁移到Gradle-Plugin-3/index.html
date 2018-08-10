@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  
+  <meta name="keywords" content="Android Blog">
+  <meta name="description" content="hirayclay&#39;s Android Blog site">
+  
+  <title>Blog</title>
+  
+    <!-- stylesheets list from config.yml -->
+    
+      <link rel="stylesheet" href="/css/materialize.min.css">
+    
+      <link rel="stylesheet" href="/css/main.min.css">
+    
+  
+  <style type="text/css">
+      html{
+          font-family: sans-serif;
+          font-weight: 300;
+      }
+      @font-face {
+          font-family: 'Material Icons';
+          font-style: normal;
+          font-weight: 400;
+          src: url(/fonts/MaterialIcons-Regular.eot);
+          src: url(/fonts/MaterialIcons-Regular.woff2) format('woff2'),
+          url(/fonts/MaterialIcons-Regular.woff) format('woff'),
+          url(/fonts/MaterialIcons-Regular.ttf) format('truetype')
+      }
+  </style>
+<link rel="stylesheet" href="/css/prism.css" type="text/css">
+<link rel="stylesheet" href="/css/prism-line-numbers.css" type="text/css"></head>
+<body>
+<div id="menu-box"><a href="javascript:void(0)" id="menu" data-activates="slide-out" class="button-collapse menu" ><span class="nav-btn"></span></a></div>
+<div id="menu-outer">
+  <div id="menu-inner">
+      <ul id="slide-out" class="side-nav" >
+    <div class="nav-header"  style="background-image: url(/images/header-bg.png);background-color:#26A69A">
+    <div class="header-box"><img src="/images/header.png" ondragstart="return false;"></div>
+    <p>hirayclay</p>
+    <div class="nav-link">
+        
+        
+        <a  href="https://github.com/HirayClay" target="_blank"><div class="link-box github"></div></a>
+        
+        
+        <a href="mailto:2425875132@qq.com"><div class="link-box email"></div></a>
+        
+        
+        
+    </div>
+    <div class="nav-search">
+        <form id="search-form"> <!-- 搜索框相关 -->
+            <input type="text" id="local-search-input" name="q" results="0" placeholder="搜索..." class="search form-control" autocomplete="off" autocorrect="off"/>
+            <div class="nav-search-img"><i class="material-icons">search</i></div>
+        </form>
+        <div id="local-search-result"></div> <!-- 搜索结果区 -->
+        <p class='no-result'>无搜索结果</p>
+    </div>
+</div>
+    <!--Homepage-->
+
+<li class="nav-list">
+    <a href="/" target="_self">
+        <div class="nav-ico"><i class="material-icons">home</i> </div><p>主页</p>
+    </a>
+</li>
+
+<!--archives-->
+
+<li class="nav-list dropdown-btn">
+    <a  class=""  target="_self">
+        <div class="nav-ico"><i class="material-icons">assignment</i></div><p>归档</p><div class="dropdown-ico"><i class="material-icons">arrow_drop_down</i></div>
+    </a>
+</li>
+
+<ul class="dropdown-menu dropdown" >
+    <li class="nav-dropdown-list">
+        <a class="archive-link" href="/archives/2018/04/">April 2018<span class="archive-count">3</span></a></li><li class="nav-dropdown-list"><a class="archive-link" href="/archives/2018/01/">January 2018<span class="archive-count">5</span></a></li><li class="nav-dropdown-list"><a class="archive-link" href="/archives/2017/12/">December 2017<span class="archive-count">1</span></a></li><li class="nav-dropdown-list"><a class="archive-link" href="/archives/2017/09/">September 2017<span class="archive-count">2</span></a>
+    </li>
+</ul>
+<!--categories-->
+
+<ul class="dropdown-menu dropdown" >
+    <li class="nav-dropdown-list">
+        
+    </li>
+</ul>
+<!--tags-->
+
+<li class="nav-list">
+    <a href="/archives" target="_self">
+        <div class="nav-ico"><i class="material-icons">bookmark</i> </div><p>标签</p>
+    </a>
+</li>
+
+<!--photo-->
+
+<!--friends-->
+
+<!--about-->
+
+
+</ul>
+
+  </div>
+</div>
+
+<div id="content-outer">
+  <div id="content-inner">
+    
+<article id="post">
+  <div class="post-page-title"  style="background-color:#26A69A;background-image:url(/images/random/vateral-1.png)" >
+  <h2>迁移到Gradle3.0</h2>
+    
+  <p>作者:hirayclay &nbsp&nbsp 发布于:<time datetime="2018-01-11T03:04:03.000Z">
+          2018-01-11
+    </time>
+  </p>
+    
+  </div>
+  <div class="post-page-content">
+  <p>最近Gradle plugin更新到3.0之后出现了不少问题，不过官方也给出了迁移到3.0之后这些问题<br>的<a href="https://developer.android.com/studio/build/gradle-plugin-3-0-0-migration.html?utm_source=android-studio#update_gradle" target="_blank" rel="external">解决办法</a>。<br>无法翻墙的可以访问<a href="https://developer.android.google.cn/studio/build/gradle-plugin-3-0-0-migration.html?utm_source=android-studio#update_gradle" target="_blank" rel="external">国内站点</a></p>
+<p>更新到3.0之后，对应的gradle也必须更新到4.1，简单修改一下gradle.properties文件里面的<br>gradle地址为：https\://services.gradle.org/distributions/gradle-4.1-all.zip就可以了<br>值得注意的是 gradle plugin的更新现在在google仓库，所以得把google仓库加上</p>
+<pre class="line-numbers language-gradle"><code class="language-gradle">    repositories {
+        ...
+        // You need to add the following repository to download the
+        // new plugin.
+        google()
+    }
+<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<h3 id="变体区分依赖管理"><a href="#变体区分依赖管理" class="headerlink" title="变体区分依赖管理"></a>变体区分依赖管理</h3><p>翻译的不太合适，大意就是现在3.0以及之后都是采用新的依赖管理机制，比如module A依赖了 module B，那么在构建A 的debug变体时也会自动依赖B的debug版本，不像以前得这么写一句<br><br><em>debugCompile project(path: ‘:data’, configuration: ‘debug’)</em></p>
+<ol>
+<li>定义风味<br>如果要构建多种flavor(实在不想翻译成风味，意会就行)，那么必须给每种flavor指定flavorDimension</li>
+</ol>
+<p>2.构建错误<br>如果你给app 增减了一个叫做staging的 buildType,但是其依赖并没有叫做staging的buildType，那么就会报错：</p>
+<pre class="line-numbers language-groovy"><code class="language-groovy">    Error<span class="token punctuation">:</span>Failed to resolve<span class="token punctuation">:</span> Could not resolve project <span class="token punctuation">:</span>mylibrary<span class="token operator">.</span>
+Required by<span class="token punctuation">:</span>
+    project <span class="token punctuation">:</span>app
+<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
+<p>那么可以使用matchingFallbacks来指定合适的替代依赖,依赖debug,qa或者release，会依赖第一个找到的依赖</p>
+<pre class="line-numbers language-groovy"><code class="language-groovy"> buildTypes <span class="token punctuation">{</span>
+        debug <span class="token punctuation">{</span><span class="token punctuation">}</span>
+        release <span class="token punctuation">{</span><span class="token punctuation">}</span>
+        staging <span class="token punctuation">{</span>
+            <span class="token comment" spellcheck="true">// Specifies a sorted list of fallback build types that the</span>
+            <span class="token comment" spellcheck="true">// plugin should try to use when a dependency does not include a</span>
+            <span class="token comment" spellcheck="true">// "staging" build type. You may specify as many fallbacks as you</span>
+            <span class="token comment" spellcheck="true">// like, and the plugin selects the first build type that's</span>
+            <span class="token comment" spellcheck="true">// available in the dependency.</span>
+            matchingFallbacks <span class="token operator">=</span> <span class="token punctuation">[</span><span class="token string">'debug'</span><span class="token punctuation">,</span> <span class="token string">'qa'</span><span class="token punctuation">,</span> <span class="token string">'release'</span><span class="token punctuation">]</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>与之类似的是，如果flavorDimension缺失，也可以指定替代的flavorDimension,用法如下</p>
+<pre class="line-numbers language-groovy"><code class="language-groovy">    android <span class="token punctuation">{</span>
+    defaultConfig<span class="token punctuation">{</span>
+        missingDimensionStrategy <span class="token string">'minApi'</span><span class="token punctuation">,</span> <span class="token string">'minApi18'</span><span class="token punctuation">,</span> <span class="token string">'minApi23'</span>
+        missingDimensionStrategy <span class="token string">'abi'</span><span class="token punctuation">,</span> <span class="token string">'x86'</span><span class="token punctuation">,</span> <span class="token string">'arm64'</span>
+    <span class="token punctuation">}</span>
+    flavorDimensions <span class="token string">'tier'</span>
+    productFlavors <span class="token punctuation">{</span>
+        free <span class="token punctuation">{</span>
+            dimension <span class="token string">'tier'</span>
+            missingDimensionStrategy <span class="token string">'minApi'</span><span class="token punctuation">,</span> <span class="token string">'minApi23'</span><span class="token punctuation">,</span> <span class="token string">'minApi18'</span>
+        <span class="token punctuation">}</span>
+        paid <span class="token punctuation">{</span><span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<h3 id="为本地Module改变依赖配置"><a href="#为本地Module改变依赖配置" class="headerlink" title="为本地Module改变依赖配置"></a>为本地Module改变依赖配置</h3><p>由于区分变体依赖的原因，现在不需要像以前那样配置具体的依赖变体了，像debugImplementation debugCompile之类的用法都可以废弃了，如果遇到一下错误那都是这个原因</p>
+<pre class="line-numbers language-groovy"><code class="language-groovy">    Error<span class="token punctuation">:</span>Unable to resolve dependency <span class="token keyword">for</span> <span class="token string">':app@debug/compileClasspath'</span><span class="token punctuation">:</span>
+        Could not resolve project <span class="token punctuation">:</span>library<span class="token operator">.</span>
+    Error<span class="token punctuation">:</span>Unable to resolve dependency <span class="token keyword">for</span> <span class="token string">':app@release/compileClasspath'</span><span class="token punctuation">:</span>
+        Could not resolve project <span class="token punctuation">:</span>library<span class="token operator">.</span>
+<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span></span></code></pre>
+<p>应该改为以下配置：</p>
+<pre class="line-numbers language-groovy"><code class="language-groovy">    dependencies <span class="token punctuation">{</span>
+    <span class="token comment" spellcheck="true">// 该用法对本地module不再生效</span>
+    <span class="token comment" spellcheck="true">// debugImplementation project(path: ':library', configuration: 'debug')</span>
+    <span class="token comment" spellcheck="true">// releaseImplementation project(path: ':library', configuration: 'release')</span>
+
+    <span class="token comment" spellcheck="true">// 简单的一句implementation就可以启用"变体区分"来自动需找对应的本地依赖变体</span>
+    implementation <span class="token function">project</span><span class="token punctuation">(</span><span class="token string">':library'</span><span class="token punctuation">)</span>
+
+    <span class="token comment" spellcheck="true">//不过对于外部依赖仍然可以使用这种方式</span>
+    debugImplementation <span class="token string">'com.example.android:app-magic:12.3'</span>
+<span class="token punctuation">}</span>
+<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>注意的是，尽管这些手动指定依赖的API仍然还可以用，但是最好不要用。因为使用project() dsl语法提供的依赖 必须和 使用依赖者 在buildType和flavor 以及其他属性上匹配。举个栗子，比如让一个debug变体去使用一个release变体是不可能的。</p>
+<p>说说新的语法和之前的区别：<br>implementation对应之前的compile 但是有一点不同—-不会暴露内部的依赖，举个栗子，比如module A依赖module B ，同时module B使用了类库 X，并且是用的implementation语法依赖的X,那么即使module A依赖了module B，类库X对module A也是不可见的。这样的好处是可以加快编译速度，因为如果X发生变化仅仅需要 重新编译X和依赖X的 module B就可以了</p>
+<p>api 对应compile,和之前的compile是完全一样的，会暴露内部依赖</p>
+<p>compileOnly 对应 provided</p>
+<p>runtimeOnly 对应apk(好吧，之前都不知道有apk这个dsl)</p>
+
+  </div>
+  <!--评论块-->
+    
+
+</article>
+<nav class="post-nav">
+  <!-- Prev Nav -->
+    
+  <a href="/2018/01/19/关于RecyclerView的一个有趣的事情/" id="post_nav-newer" class="post-nav-content prev-content">
+      新篇
+  </a>
+    
+
+
+  <!-- Next Nav -->
+    
+  <a href="/2018/01/05/Gradle的一些小知识-不定期更新/" id="post_nav-older" class="post-nav-content next-content">
+      旧篇
+  </a>
+    
+</nav>
+<div class="post-toc-btn"><i class="material-icons">format_list_numbered</i></div>
+<div class="post-toc-none"><p>(无)</p></div>
+<div class="post-toc-box">
+    <ol class="post-toc"><li class="post-toc-item post-toc-level-3"><a class="post-toc-link" href="#变体区分依赖管理"><span class="post-toc-number">1.</span> <span class="post-toc-text">变体区分依赖管理</span></a></li><li class="post-toc-item post-toc-level-3"><a class="post-toc-link" href="#为本地Module改变依赖配置"><span class="post-toc-number">2.</span> <span class="post-toc-text">为本地Module改变依赖配置</span></a></li></ol>
+</div>
+<!--<div class="post-back"><i class="material-icons">arrow_back</i></div>-->
+<script type="text/javascript">
+    menu();
+</script>
+  </div>
+</div>
+<div id="bottom-outer">
+  <div id="bottom-inner">
+    <a  id="top-button" onfocus="this.blur();"><div class="up upinbody" style="background-color:#26A69A"><i class="material-icons material-up">vertical_align_top</i></div></a>
+
+
+<p style="line-height: 45px">Copyright ©  2017  Blog</p>
+<p style="line-height: 45px">Powered by <a href="https://hexo.io/" target="_blank"> Hexo </a> && Theme - <a href="https://github.com/moumao/hexo-theme-Vateral" target="_blank">Vateral</a></p>
+
+  </div>
+</div>
+
+<!--影集界面需要的资源-->
+
+
+
+<!-- scripts list from theme config.yml -->
+
+<script src="/js/jquery-3.1.1.min.js"></script>
+
+<script src="/js/materialize.min.js"></script>
+
+<script src="/js/main.min.js"></script>
+
+
+<script>
+    NProgress.start();
+    NProgress.done();
+    lazy();
+    links();
+    window.onpopstate = menu();
+    //pjax操作
+    $(document).pjax('a:not(.nopjax)', '#content-inner', {fragment:'#content-inner', timeout:8000});
+    $(document).on('pjax:start', NProgress.start).on('pjax:end', NProgress.done)
+        .on('pjax:end', () => {
+            dowmdiv();
+            lazy();
+            toc();
+            links();
+            menu();
+        });
+</script>
+
+</body>
+</html>

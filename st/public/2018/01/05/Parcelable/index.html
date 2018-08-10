@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  
+  <meta name="keywords" content="Android Blog">
+  <meta name="description" content="hirayclay&#39;s Android Blog site">
+  
+  <title>Blog</title>
+  
+    <!-- stylesheets list from config.yml -->
+    
+      <link rel="stylesheet" href="/css/materialize.min.css">
+    
+      <link rel="stylesheet" href="/css/main.min.css">
+    
+  
+  <style type="text/css">
+      html{
+          font-family: sans-serif;
+          font-weight: 300;
+      }
+      @font-face {
+          font-family: 'Material Icons';
+          font-style: normal;
+          font-weight: 400;
+          src: url(/fonts/MaterialIcons-Regular.eot);
+          src: url(/fonts/MaterialIcons-Regular.woff2) format('woff2'),
+          url(/fonts/MaterialIcons-Regular.woff) format('woff'),
+          url(/fonts/MaterialIcons-Regular.ttf) format('truetype')
+      }
+  </style>
+<link rel="stylesheet" href="/css/prism.css" type="text/css">
+<link rel="stylesheet" href="/css/prism-line-numbers.css" type="text/css"></head>
+<body>
+<div id="menu-box"><a href="javascript:void(0)" id="menu" data-activates="slide-out" class="button-collapse menu" ><span class="nav-btn"></span></a></div>
+<div id="menu-outer">
+  <div id="menu-inner">
+      <ul id="slide-out" class="side-nav" >
+    <div class="nav-header"  style="background-image: url(/images/header-bg.png);background-color:#26A69A">
+    <div class="header-box"><img src="/images/header.png" ondragstart="return false;"></div>
+    <p>hirayclay</p>
+    <div class="nav-link">
+        
+        
+        <a  href="https://github.com/HirayClay" target="_blank"><div class="link-box github"></div></a>
+        
+        
+        <a href="mailto:2425875132@qq.com"><div class="link-box email"></div></a>
+        
+        
+        
+    </div>
+    <div class="nav-search">
+        <form id="search-form"> <!-- 搜索框相关 -->
+            <input type="text" id="local-search-input" name="q" results="0" placeholder="搜索..." class="search form-control" autocomplete="off" autocorrect="off"/>
+            <div class="nav-search-img"><i class="material-icons">search</i></div>
+        </form>
+        <div id="local-search-result"></div> <!-- 搜索结果区 -->
+        <p class='no-result'>无搜索结果</p>
+    </div>
+</div>
+    <!--Homepage-->
+
+<li class="nav-list">
+    <a href="/" target="_self">
+        <div class="nav-ico"><i class="material-icons">home</i> </div><p>主页</p>
+    </a>
+</li>
+
+<!--archives-->
+
+<li class="nav-list dropdown-btn">
+    <a  class=""  target="_self">
+        <div class="nav-ico"><i class="material-icons">assignment</i></div><p>归档</p><div class="dropdown-ico"><i class="material-icons">arrow_drop_down</i></div>
+    </a>
+</li>
+
+<ul class="dropdown-menu dropdown" >
+    <li class="nav-dropdown-list">
+        <a class="archive-link" href="/archives/2018/04/">April 2018<span class="archive-count">3</span></a></li><li class="nav-dropdown-list"><a class="archive-link" href="/archives/2018/01/">January 2018<span class="archive-count">5</span></a></li><li class="nav-dropdown-list"><a class="archive-link" href="/archives/2017/12/">December 2017<span class="archive-count">1</span></a></li><li class="nav-dropdown-list"><a class="archive-link" href="/archives/2017/09/">September 2017<span class="archive-count">2</span></a>
+    </li>
+</ul>
+<!--categories-->
+
+<ul class="dropdown-menu dropdown" >
+    <li class="nav-dropdown-list">
+        
+    </li>
+</ul>
+<!--tags-->
+
+<li class="nav-list">
+    <a href="/archives" target="_self">
+        <div class="nav-ico"><i class="material-icons">bookmark</i> </div><p>标签</p>
+    </a>
+</li>
+
+<!--photo-->
+
+<!--friends-->
+
+<!--about-->
+
+
+</ul>
+
+  </div>
+</div>
+
+<div id="content-outer">
+  <div id="content-inner">
+    
+<article id="post">
+  <div class="post-page-title"  style="background-color:#26A69A;background-image:url(/images/random/vateral-4.png)" >
+  <h2>Parcelable</h2>
+    
+  <p>作者:hirayclay &nbsp&nbsp 发布于:<time datetime="2018-01-05T02:11:07.000Z">
+          2018-01-05
+    </time>
+  </p>
+    
+  </div>
+  <div class="post-page-content">
+  <p>这里并不是要仔细说一遍Parcelable，而是看了一些Parcelable的国内博客，发现都是说怎么用。怎么用官方文档就有例子，而是有个点，没有一篇博客说出来（也有可能我看的不仔细？）。<br>这个疑惑估计你也有过，在使用Parcelable 序列化和序列化的时候都是write<strong> read</strong>方法调用，但是发现如果有两个相同类型的值，比如有两个int要序列化，我们是不是要调用writeInt两次，然后反序列化的时候调用两次readInt，那么问题来了，反序列化的时候调用readInt怎么就知道是拿到的正确的值，而不会拿反了，毕竟两个int呢。<br>就这个不大不小的点，一直没看到，当然我也想过，write<strong> readInt</strong>操作的值的顺序必须一致，不然就会错<br>写了一小段代码跑了下，确实必须按照顺序来，因为底层就是个指针在挪动，挨个读取，比如取一个int的值，就会挪动4字节，所以顺序错了有时会拿到错的值，甚至拿不到正确的值（读到null直接crash）</p>
+<pre class="line-numbers language-java"><code class="language-java">    var name<span class="token operator">:</span> String <span class="token operator">=</span> <span class="token string">""</span>
+    var nickName<span class="token operator">:</span> String <span class="token operator">=</span> <span class="token string">""</span>
+    var id<span class="token operator">:</span> Int <span class="token operator">=</span> <span class="token number">0</span>
+
+    <span class="token function">constructor</span><span class="token punctuation">(</span>parcel<span class="token operator">:</span> Parcel<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        id <span class="token operator">=</span> parcel<span class="token punctuation">.</span><span class="token function">readInt</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+        nickName <span class="token operator">=</span> parcel<span class="token punctuation">.</span><span class="token function">readString</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+        name <span class="token operator">=</span> parcel<span class="token punctuation">.</span><span class="token function">readString</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+    <span class="token punctuation">}</span>
+
+    override fun <span class="token function">writeToParcel</span><span class="token punctuation">(</span>parcel<span class="token operator">:</span> Parcel<span class="token punctuation">,</span> flags<span class="token operator">:</span> Int<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        parcel<span class="token punctuation">.</span><span class="token function">writeString</span><span class="token punctuation">(</span>name<span class="token punctuation">)</span>
+        parcel<span class="token punctuation">.</span><span class="token function">writeString</span><span class="token punctuation">(</span>nickName<span class="token punctuation">)</span>
+        parcel<span class="token punctuation">.</span><span class="token function">writeInt</span><span class="token punctuation">(</span>id<span class="token punctuation">)</span>
+    <span class="token punctuation">}</span>
+<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>然后直接崩了<br><img src="https://raw.githubusercontent.com/HirayClay/draft/master/ParcelableCrash.png" alt=""></p>
+<p>这里有篇歪果仁写的<a href="https://www.sitepoint.com/transfer-data-between-activities-with-android-parcelable/" target="_blank" rel="external">博客</a>，很详细</p>
+<p>The End</p>
+
+  </div>
+  <!--评论块-->
+    
+
+</article>
+<nav class="post-nav">
+  <!-- Prev Nav -->
+    
+  <a href="/2018/01/05/Gradle的一些小知识-不定期更新/" id="post_nav-newer" class="post-nav-content prev-content">
+      新篇
+  </a>
+    
+
+
+  <!-- Next Nav -->
+    
+  <a href="/2017/12/19/LinearLayoutManager源码阅读（滑动）/" id="post_nav-older" class="post-nav-content next-content">
+      旧篇
+  </a>
+    
+</nav>
+<div class="post-toc-btn"><i class="material-icons">format_list_numbered</i></div>
+<div class="post-toc-none"><p>(无)</p></div>
+<div class="post-toc-box">
+    
+</div>
+<!--<div class="post-back"><i class="material-icons">arrow_back</i></div>-->
+<script type="text/javascript">
+    menu();
+</script>
+  </div>
+</div>
+<div id="bottom-outer">
+  <div id="bottom-inner">
+    <a  id="top-button" onfocus="this.blur();"><div class="up upinbody" style="background-color:#26A69A"><i class="material-icons material-up">vertical_align_top</i></div></a>
+
+
+<p style="line-height: 45px">Copyright ©  2017  Blog</p>
+<p style="line-height: 45px">Powered by <a href="https://hexo.io/" target="_blank"> Hexo </a> && Theme - <a href="https://github.com/moumao/hexo-theme-Vateral" target="_blank">Vateral</a></p>
+
+  </div>
+</div>
+
+<!--影集界面需要的资源-->
+
+
+
+<!-- scripts list from theme config.yml -->
+
+<script src="/js/jquery-3.1.1.min.js"></script>
+
+<script src="/js/materialize.min.js"></script>
+
+<script src="/js/main.min.js"></script>
+
+
+<script>
+    NProgress.start();
+    NProgress.done();
+    lazy();
+    links();
+    window.onpopstate = menu();
+    //pjax操作
+    $(document).pjax('a:not(.nopjax)', '#content-inner', {fragment:'#content-inner', timeout:8000});
+    $(document).on('pjax:start', NProgress.start).on('pjax:end', NProgress.done)
+        .on('pjax:end', () => {
+            dowmdiv();
+            lazy();
+            toc();
+            links();
+            menu();
+        });
+</script>
+
+</body>
+</html>

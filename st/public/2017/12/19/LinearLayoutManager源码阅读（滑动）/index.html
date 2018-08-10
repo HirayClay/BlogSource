@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  
+  <meta name="keywords" content="Android Blog">
+  <meta name="description" content="hirayclay&#39;s Android Blog site">
+  
+  <title>Blog</title>
+  
+    <!-- stylesheets list from config.yml -->
+    
+      <link rel="stylesheet" href="/css/materialize.min.css">
+    
+      <link rel="stylesheet" href="/css/main.min.css">
+    
+  
+  <style type="text/css">
+      html{
+          font-family: sans-serif;
+          font-weight: 300;
+      }
+      @font-face {
+          font-family: 'Material Icons';
+          font-style: normal;
+          font-weight: 400;
+          src: url(/fonts/MaterialIcons-Regular.eot);
+          src: url(/fonts/MaterialIcons-Regular.woff2) format('woff2'),
+          url(/fonts/MaterialIcons-Regular.woff) format('woff'),
+          url(/fonts/MaterialIcons-Regular.ttf) format('truetype')
+      }
+  </style>
+<link rel="stylesheet" href="/css/prism.css" type="text/css">
+<link rel="stylesheet" href="/css/prism-line-numbers.css" type="text/css"></head>
+<body>
+<div id="menu-box"><a href="javascript:void(0)" id="menu" data-activates="slide-out" class="button-collapse menu" ><span class="nav-btn"></span></a></div>
+<div id="menu-outer">
+  <div id="menu-inner">
+      <ul id="slide-out" class="side-nav" >
+    <div class="nav-header"  style="background-image: url(/images/header-bg.png);background-color:#26A69A">
+    <div class="header-box"><img src="/images/header.png" ondragstart="return false;"></div>
+    <p>hirayclay</p>
+    <div class="nav-link">
+        
+        
+        <a  href="https://github.com/HirayClay" target="_blank"><div class="link-box github"></div></a>
+        
+        
+        <a href="mailto:2425875132@qq.com"><div class="link-box email"></div></a>
+        
+        
+        
+    </div>
+    <div class="nav-search">
+        <form id="search-form"> <!-- 搜索框相关 -->
+            <input type="text" id="local-search-input" name="q" results="0" placeholder="搜索..." class="search form-control" autocomplete="off" autocorrect="off"/>
+            <div class="nav-search-img"><i class="material-icons">search</i></div>
+        </form>
+        <div id="local-search-result"></div> <!-- 搜索结果区 -->
+        <p class='no-result'>无搜索结果</p>
+    </div>
+</div>
+    <!--Homepage-->
+
+<li class="nav-list">
+    <a href="/" target="_self">
+        <div class="nav-ico"><i class="material-icons">home</i> </div><p>主页</p>
+    </a>
+</li>
+
+<!--archives-->
+
+<li class="nav-list dropdown-btn">
+    <a  class=""  target="_self">
+        <div class="nav-ico"><i class="material-icons">assignment</i></div><p>归档</p><div class="dropdown-ico"><i class="material-icons">arrow_drop_down</i></div>
+    </a>
+</li>
+
+<ul class="dropdown-menu dropdown" >
+    <li class="nav-dropdown-list">
+        <a class="archive-link" href="/archives/2018/04/">April 2018<span class="archive-count">3</span></a></li><li class="nav-dropdown-list"><a class="archive-link" href="/archives/2018/01/">January 2018<span class="archive-count">5</span></a></li><li class="nav-dropdown-list"><a class="archive-link" href="/archives/2017/12/">December 2017<span class="archive-count">1</span></a></li><li class="nav-dropdown-list"><a class="archive-link" href="/archives/2017/09/">September 2017<span class="archive-count">2</span></a>
+    </li>
+</ul>
+<!--categories-->
+
+<ul class="dropdown-menu dropdown" >
+    <li class="nav-dropdown-list">
+        
+    </li>
+</ul>
+<!--tags-->
+
+<li class="nav-list">
+    <a href="/archives" target="_self">
+        <div class="nav-ico"><i class="material-icons">bookmark</i> </div><p>标签</p>
+    </a>
+</li>
+
+<!--photo-->
+
+<!--friends-->
+
+<!--about-->
+
+
+</ul>
+
+  </div>
+</div>
+
+<div id="content-outer">
+  <div id="content-inner">
+    
+<article id="post">
+  <div class="post-page-title"  style="background-color:#26A69A;background-image:url(/images/random/vateral-3.png)" >
+  <h2>LinearLayoutManager源码阅读(滚动分析)</h2>
+    
+  <p>作者:hirayclay &nbsp&nbsp 发布于:<time datetime="2017-12-19T07:45:56.000Z">
+          2017-12-19
+    </time>
+  </p>
+    
+  </div>
+  <div class="post-page-content">
+  <p>实现自定义的通用的LayoutManager，但是卡住了，遂看下Android 官方的几种LayoutManager是如何优雅实现的，大致的以及一些细节都看懂了，但是还是没找到什么好办法解决自己的问题，不如趁着热度把自己的分析过程写下来，也给其他需要的Androider.其实真的要对RecyclerView有个全面的认识，其实LayoutManager、Adapter、动画以及测量流程等细节都是要清楚的，因为虽然说RV给人使用上非常灵活解耦，但是其实内部也是这几者的紧密配合才达到的效果，所以有一点不明白其他地方可能也就会很模糊看不下去。也不细分章节了，就按照滚动的流程来写。至于为什么从滚动开始分析，是因为看源码还是讲究切入点，从RecyclerView的滑动开始是最佳切入点，很直观，要是第一次直接就从onLayoutChildren看起，我觉得看不了几行就得放弃。当然这篇文章的内容很多没说清楚的其实都是onLayoutChildren的一些逻辑，所以都略过了，只关注滑动。</p>
+<p>由于自定的LayoutManager如果要(肯定要，不然还定义啥)支持滚动都必须至少重写以下两个方法中的一个，并且返回true，分别表示支持垂直滚动和水平滚动</p>
+<pre class="line-numbers language-java"><code class="language-java"> <span class="token keyword">public</span> <span class="token keyword">boolean</span> <span class="token function">canScrollHorizontally</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            <span class="token keyword">return</span> <span class="token boolean">true</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+ <span class="token keyword">public</span> <span class="token keyword">boolean</span> <span class="token function">canScrollVertically</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            <span class="token keyword">return</span> <span class="token boolean">true</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>在发生滚动的时候，会在以下两个方法回调滚动的距离dy/dx</p>
+<pre class="line-numbers language-java"><code class="language-java">    <span class="token keyword">public</span> <span class="token keyword">int</span> <span class="token function">scrollVerticallyBy</span><span class="token punctuation">(</span><span class="token keyword">int</span> dy<span class="token punctuation">,</span> Recycler recycler<span class="token punctuation">,</span> State state<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            <span class="token keyword">return</span> <span class="token number">0</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+    <span class="token keyword">public</span> <span class="token keyword">int</span> <span class="token function">scrollHorizontallyBy</span><span class="token punctuation">(</span><span class="token keyword">int</span> dx<span class="token punctuation">,</span> Recycler recycler<span class="token punctuation">,</span> State state<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            <span class="token keyword">return</span> <span class="token number">0</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>这里我们从LinearLayoutManager的垂直滚动分析起，进入scrollBy方法,</p>
+<pre class="line-numbers language-java"><code class="language-java">    <span class="token keyword">int</span> <span class="token function">scrollBy</span><span class="token punctuation">(</span><span class="token keyword">int</span> dy<span class="token punctuation">,</span> RecyclerView<span class="token punctuation">.</span>Recycler recycler<span class="token punctuation">,</span> RecyclerView<span class="token punctuation">.</span>State state<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token function">getChildCount</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">==</span> <span class="token number">0</span> <span class="token operator">||</span> dy <span class="token operator">==</span> <span class="token number">0</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            <span class="token keyword">return</span> <span class="token number">0</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token comment" spellcheck="true">//滚动发生时，是需要回收View的</span>
+        mLayoutState<span class="token punctuation">.</span>mRecycle <span class="token operator">=</span> <span class="token boolean">true</span><span class="token punctuation">;</span>
+        <span class="token function">ensureLayoutState</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment" spellcheck="true">//手指向上滑动时dy>0</span>
+        <span class="token keyword">final</span> <span class="token keyword">int</span> layoutDirection <span class="token operator">=</span> dy <span class="token operator">></span> <span class="token number">0</span> <span class="token operator">?</span> LayoutState<span class="token punctuation">.</span>LAYOUT_END <span class="token operator">:</span> LayoutState<span class="token punctuation">.</span>LAYOUT_START<span class="token punctuation">;</span>
+        <span class="token keyword">final</span> <span class="token keyword">int</span> absDy <span class="token operator">=</span> Math<span class="token punctuation">.</span><span class="token function">abs</span><span class="token punctuation">(</span>dy<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment" spellcheck="true">//更新LayoutState</span>
+        <span class="token function">updateLayoutState</span><span class="token punctuation">(</span>layoutDirection<span class="token punctuation">,</span> absDy<span class="token punctuation">,</span> <span class="token boolean">true</span><span class="token punctuation">,</span> state<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">final</span> <span class="token keyword">int</span> consumed <span class="token operator">=</span> mLayoutState<span class="token punctuation">.</span>mScrollingOffset
+                <span class="token operator">+</span> <span class="token function">fill</span><span class="token punctuation">(</span>recycler<span class="token punctuation">,</span> mLayoutState<span class="token punctuation">,</span> state<span class="token punctuation">,</span> <span class="token boolean">false</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>consumed <span class="token operator">&lt;</span> <span class="token number">0</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span>DEBUG<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                Log<span class="token punctuation">.</span><span class="token function">d</span><span class="token punctuation">(</span>TAG<span class="token punctuation">,</span> <span class="token string">"Don't have any more elements to scroll"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+            <span class="token keyword">return</span> <span class="token number">0</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token keyword">final</span> <span class="token keyword">int</span> scrolled <span class="token operator">=</span> absDy <span class="token operator">></span> consumed <span class="token operator">?</span> layoutDirection <span class="token operator">*</span> consumed <span class="token operator">:</span> dy<span class="token punctuation">;</span>
+        <span class="token comment" spellcheck="true">//layout view结束，所有View整体平移；这里需要注意的是LLM并非是从头到尾一个个layout view，而是先根据偏移把需要回收的view回收掉，会显示的view显示出来，最后进行整体的平移。想一想这样效率确实要高</span>
+        mOrientationHelper<span class="token punctuation">.</span><span class="token function">offsetChildren</span><span class="token punctuation">(</span><span class="token operator">-</span>scrolled<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>DEBUG<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            Log<span class="token punctuation">.</span><span class="token function">d</span><span class="token punctuation">(</span>TAG<span class="token punctuation">,</span> <span class="token string">"scroll req: "</span> <span class="token operator">+</span> dy <span class="token operator">+</span> <span class="token string">" scrolled: "</span> <span class="token operator">+</span> scrolled<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        mLayoutState<span class="token punctuation">.</span>mLastScrollDelta <span class="token operator">=</span> scrolled<span class="token punctuation">;</span>
+        <span class="token keyword">return</span> scrolled<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>写了部分注释，具体分析一下updateLayoutState方法<br>分析这个方法前，先看下LayoutState这个类，了解一下我们需要关注的几个重要参数的含义</p>
+<p>mRecycle 表示是否需要回收View,滑动情况下这个值是true，但是在有item 添加删除的情况是false，因为锚点什么的得靠view来确定，不能回收</p>
+<p>mOffset   layout View时候的起始坐标(垂直方向的LinearLayoutManager 表示y值)，e.g.比如发生滑动后，下一个item需要显示出来，那么mOffset的值就等于最后一个可见item的bottom值(不考虑margin，向上滑动)</p>
+<p>mAvailable 表示可用距离，在layout View的时候用到</p>
+<p>mCurrentPosition  表示获取View的起始索引，在layout View的时候循环取View的时候用到</p>
+<p>mItemDirection  获取item 数据的方向，是从前到后（值为1），还是从后往前（值为-1），本篇分析的是正序情况</p>
+<p>mExtra 在LayoutManager支持predictive动画的时候这个值很有用，具体的需要了解RV的动画机制才明白这个值怎么回事，简单的说就是即使一个item此时(当他即将进入RV可见范围时)对用户不可见，但是还是得把他layout出来，虽然已经超出了RV的边界用户看不到，这样做的目的是为了更好的动画体验（因为需要两次layout，一次pre-layout 一次post-layout来确定动画的起始和终止位置，不然就只能做最简单的fadeIn fadeOut。只有当item add remove发生时才有值，一般为0</p>
+<p>再回过来看updateLayoutState方法(并不喜欢贴太长串的代码。。。)</p>
+<pre class="line-numbers language-java"><code class="language-java">     <span class="token keyword">private</span> <span class="token keyword">void</span> <span class="token function">updateLayoutState</span><span class="token punctuation">(</span><span class="token keyword">int</span> layoutDirection<span class="token punctuation">,</span> <span class="token keyword">int</span> requiredSpace<span class="token punctuation">,</span>
+            <span class="token keyword">boolean</span> canUseExistingSpace<span class="token punctuation">,</span> RecyclerView<span class="token punctuation">.</span>State state<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token comment" spellcheck="true">// If parent provides a hint, don't measure unlimited.</span>
+        mLayoutState<span class="token punctuation">.</span>mInfinite <span class="token operator">=</span> <span class="token function">resolveIsInfinite</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        mLayoutState<span class="token punctuation">.</span>mExtra <span class="token operator">=</span> <span class="token function">getExtraLayoutSpace</span><span class="token punctuation">(</span>state<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        mLayoutState<span class="token punctuation">.</span>mLayoutDirection <span class="token operator">=</span> layoutDirection<span class="token punctuation">;</span>
+        <span class="token keyword">int</span> scrollingOffset<span class="token punctuation">;</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>layoutDirection <span class="token operator">==</span> LayoutState<span class="token punctuation">.</span>LAYOUT_END<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            mLayoutState<span class="token punctuation">.</span>mExtra <span class="token operator">+=</span> mOrientationHelper<span class="token punctuation">.</span><span class="token function">getEndPadding</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token comment" spellcheck="true">// get the first child in the direction we are going</span>
+            <span class="token keyword">final</span> View child <span class="token operator">=</span> <span class="token function">getChildClosestToEnd</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token comment" spellcheck="true">// the direction in which we are traversing children</span>
+            mLayoutState<span class="token punctuation">.</span>mItemDirection <span class="token operator">=</span> mShouldReverseLayout <span class="token operator">?</span> LayoutState<span class="token punctuation">.</span>ITEM_DIRECTION_HEAD
+                    <span class="token operator">:</span> LayoutState<span class="token punctuation">.</span>ITEM_DIRECTION_TAIL<span class="token punctuation">;</span>
+            mLayoutState<span class="token punctuation">.</span>mCurrentPosition <span class="token operator">=</span> <span class="token function">getPosition</span><span class="token punctuation">(</span>child<span class="token punctuation">)</span> <span class="token operator">+</span> mLayoutState<span class="token punctuation">.</span>mItemDirection<span class="token punctuation">;</span>
+            mLayoutState<span class="token punctuation">.</span>mOffset <span class="token operator">=</span> mOrientationHelper<span class="token punctuation">.</span><span class="token function">getDecoratedEnd</span><span class="token punctuation">(</span>child<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token comment" spellcheck="true">// calculate how much we can scroll without adding new children (independent of layout)</span>
+            scrollingOffset <span class="token operator">=</span> mOrientationHelper<span class="token punctuation">.</span><span class="token function">getDecoratedEnd</span><span class="token punctuation">(</span>child<span class="token punctuation">)</span>
+                    <span class="token operator">-</span> mOrientationHelper<span class="token punctuation">.</span><span class="token function">getEndAfterPadding</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+        <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token punctuation">{</span>
+            <span class="token keyword">final</span> View child <span class="token operator">=</span> <span class="token function">getChildClosestToStart</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            mLayoutState<span class="token punctuation">.</span>mExtra <span class="token operator">+=</span> mOrientationHelper<span class="token punctuation">.</span><span class="token function">getStartAfterPadding</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            mLayoutState<span class="token punctuation">.</span>mItemDirection <span class="token operator">=</span> mShouldReverseLayout <span class="token operator">?</span> LayoutState<span class="token punctuation">.</span>ITEM_DIRECTION_TAIL
+                    <span class="token operator">:</span> LayoutState<span class="token punctuation">.</span>ITEM_DIRECTION_HEAD<span class="token punctuation">;</span>
+            mLayoutState<span class="token punctuation">.</span>mCurrentPosition <span class="token operator">=</span> <span class="token function">getPosition</span><span class="token punctuation">(</span>child<span class="token punctuation">)</span> <span class="token operator">+</span> mLayoutState<span class="token punctuation">.</span>mItemDirection<span class="token punctuation">;</span>
+            mLayoutState<span class="token punctuation">.</span>mOffset <span class="token operator">=</span> mOrientationHelper<span class="token punctuation">.</span><span class="token function">getDecoratedStart</span><span class="token punctuation">(</span>child<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            scrollingOffset <span class="token operator">=</span> <span class="token operator">-</span>mOrientationHelper<span class="token punctuation">.</span><span class="token function">getDecoratedStart</span><span class="token punctuation">(</span>child<span class="token punctuation">)</span>
+                    <span class="token operator">+</span> mOrientationHelper<span class="token punctuation">.</span><span class="token function">getStartAfterPadding</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        mLayoutState<span class="token punctuation">.</span>mAvailable <span class="token operator">=</span> requiredSpace<span class="token punctuation">;</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>canUseExistingSpace<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            mLayoutState<span class="token punctuation">.</span>mAvailable <span class="token operator">-=</span> scrollingOffset<span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        mLayoutState<span class="token punctuation">.</span>mScrollingOffset <span class="token operator">=</span> scrollingOffset<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>前面几行就是简单的赋值更新状态，然后是根据layoutDirection的方向进行其他参数的计算，我们这里是分析的手指上滑，对应的layoutDireciton是LAYOUT_END，我们进入layoutDirection == LayoutState.LAYOUT_END成立的情况下去看：</p>
+<p> 1.通过getChildClosestToEnd方法拿到RV最接近End的child(如果是水平布局，那么end就是RV的right，垂直布局end就是RV的bottom)</p>
+<p> 2.根据mShouldReverseLayout变量给mItemDirection赋值，我们一般都不使用逆序布局，所以mItemDirection的值是ITEM_DIRECTION_HEAD，也就是说待会在fill方法内部取child来放的时候是正序，也就是从前往后依次取，反之亦然</p>
+<p> 3.根据刚才取到的child获取到其在adapter中的位置，加上mItemDirection后赋值给mCurrentPosition，这个好理解，mCurrentPosition表示的就是取child的开始索引，LayoutState里面有个next方法就是这么做的，可以看下代码</p>
+<pre class="line-numbers language-java"><code class="language-java">        View <span class="token function">next</span><span class="token punctuation">(</span>RecyclerView<span class="token punctuation">.</span>Recycler recycler<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span>mScrapList <span class="token operator">!=</span> null<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                <span class="token keyword">return</span> <span class="token function">nextViewFromScrapList</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+            <span class="token keyword">final</span> View view <span class="token operator">=</span> recycler<span class="token punctuation">.</span><span class="token function">getViewForPosition</span><span class="token punctuation">(</span>mCurrentPosition<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            mCurrentPosition <span class="token operator">+=</span> mItemDirection<span class="token punctuation">;</span>
+            <span class="token keyword">return</span> view<span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p> 4.给mOffset赋值，也就是下图最后一个item的bottom值，是后续依次放child的起始坐标<br> <img src="https://github.com/HirayClay/draft/blob/master/RV_LLM.png?raw=true" alt=""></p>
+<p> 5.至于scrollingOffset就是上面这张图里面最后一个item底部距离RV底部的距离，官方也有注释—-“不需要添加新的children的情况下滚动的最大距离”—–也就是说最后一个item刚好完全滚进来，但是又不会有新的item滚进来的意思</p>
+<p> 6最后给mAvailable赋值为requiredSpace，也就是此次滚动的距离,然后判断canUseExistingSpace为true就减去刚才的scrollingOffset；这里为什么要减去这个scrollingOffset呢<br>  ，其实就是把这个零头减掉方便计算而已，最后一句mScrollingOffset又把scrollingOffse<br>  t保存起来了。最后所有child都放置好之后，返回消耗的滑动距离时候，在scrollBy方法那里<br>  最后又把这个值加上去了，就这句：</p>
+<pre class="line-numbers language-java"><code class="language-java">     <span class="token keyword">final</span> <span class="token keyword">int</span> consumed <span class="token operator">=</span> mLayoutState<span class="token punctuation">.</span>mScrollingOffset
+                <span class="token operator">+</span> <span class="token function">fill</span><span class="token punctuation">(</span>recycler<span class="token punctuation">,</span> mLayoutState<span class="token punctuation">,</span> state<span class="token punctuation">,</span> <span class="token boolean">false</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
+<p>  好了，这个方法看完了，进去fill方法，没有贴全部的代码，还是一块一块看紧凑点</p>
+<pre class="line-numbers language-java"><code class="language-java">        <span class="token keyword">if</span> <span class="token punctuation">(</span>layoutState<span class="token punctuation">.</span>mScrollingOffset <span class="token operator">!=</span> LayoutState<span class="token punctuation">.</span>SCROLLING_OFFSET_NaN<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            <span class="token comment" spellcheck="true">// TODO ugly bug fix. should not happen</span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span>layoutState<span class="token punctuation">.</span>mAvailable <span class="token operator">&lt;</span> <span class="token number">0</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                layoutState<span class="token punctuation">.</span>mScrollingOffset <span class="token operator">+=</span> layoutState<span class="token punctuation">.</span>mAvailable<span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+            <span class="token function">recycleByLayoutState</span><span class="token punctuation">(</span>recycler<span class="token punctuation">,</span> layoutState<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>这句确实不太明白什么意思也不敢说我现在看明白了。外层这个if是为了避开首次初始化的情况，只有正常滑动的情况时候才会进来，但是滑动情况下 layoutState.mAvailable &lt; 0 这个条件只有在滑动距离过小不足以把最后一个item的底部完全滑进来的情况才满足，不过看官方的注释好像是有bug，可能就做了一个防御性的if判断，防止特殊情况发生把，就假设这个条件满足了，不做if里面的处理，好像也不会发生什么问题把，不过回头想一下mScrollingOffset这个字段的意思是“在不需要添加新的View时候能滑动的最大距离”，按照这么理解，当mAvailable&lt;0时候，说明滑动距离太小，没法把item底部全滑进来，最多也就只能滑动此次滑动的距离，所以这么处理之后mSrollingOffset就是此次滑动距离；所以这个TODO注释看的挺烦的，还以为是bug，让人很纠结是个什么bug-_-，最后recycleByLayoutState方法回收了一下此次滚动发生之后会越界不见的View</p>
+<pre class="line-numbers language-java"><code class="language-java">       <span class="token keyword">private</span> <span class="token keyword">void</span> <span class="token function">recycleByLayoutState</span><span class="token punctuation">(</span>RecyclerView<span class="token punctuation">.</span>Recycler recycler<span class="token punctuation">,</span> LayoutState layoutState<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token operator">!</span>layoutState<span class="token punctuation">.</span>mRecycle <span class="token operator">||</span> layoutState<span class="token punctuation">.</span>mInfinite<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            <span class="token keyword">return</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>layoutState<span class="token punctuation">.</span>mLayoutDirection <span class="token operator">==</span> LayoutState<span class="token punctuation">.</span>LAYOUT_START<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            <span class="token function">recycleViewsFromEnd</span><span class="token punctuation">(</span>recycler<span class="token punctuation">,</span> layoutState<span class="token punctuation">.</span>mScrollingOffset<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token punctuation">{</span>
+            <span class="token function">recycleViewsFromStart</span><span class="token punctuation">(</span>recycler<span class="token punctuation">,</span> layoutState<span class="token punctuation">.</span>mScrollingOffset<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>根据滑动方向选择是从后往前回收还是从前往后回收，我们考虑手指上滑，所以可能会有头部的View出界被滑出去，所以是调用的recycleViewsFromStart方法</p>
+<pre class="line-numbers language-java"><code class="language-java">  <span class="token keyword">private</span> <span class="token keyword">void</span> <span class="token function">recycleViewsFromStart</span><span class="token punctuation">(</span>RecyclerView<span class="token punctuation">.</span>Recycler recycler<span class="token punctuation">,</span> <span class="token keyword">int</span> dt<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>dt <span class="token operator">&lt;</span> <span class="token number">0</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span>DEBUG<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                Log<span class="token punctuation">.</span><span class="token function">d</span><span class="token punctuation">(</span>TAG<span class="token punctuation">,</span> <span class="token string">"Called recycle from start with a negative value. This might happen"</span>
+                        <span class="token operator">+</span> <span class="token string">" during layout changes but may be sign of a bug"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+            <span class="token keyword">return</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token comment" spellcheck="true">// ignore padding, ViewGroup may not clip children.</span>
+        <span class="token keyword">final</span> <span class="token keyword">int</span> limit <span class="token operator">=</span> dt<span class="token punctuation">;</span>
+        <span class="token keyword">final</span> <span class="token keyword">int</span> childCount <span class="token operator">=</span> <span class="token function">getChildCount</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>mShouldReverseLayout<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token keyword">int</span> i <span class="token operator">=</span> childCount <span class="token operator">-</span> <span class="token number">1</span><span class="token punctuation">;</span> i <span class="token operator">>=</span> <span class="token number">0</span><span class="token punctuation">;</span> i<span class="token operator">--</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                View child <span class="token operator">=</span> <span class="token function">getChildAt</span><span class="token punctuation">(</span>i<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                <span class="token keyword">if</span> <span class="token punctuation">(</span>mOrientationHelper<span class="token punctuation">.</span><span class="token function">getDecoratedEnd</span><span class="token punctuation">(</span>child<span class="token punctuation">)</span> <span class="token operator">></span> limit
+                        <span class="token operator">||</span> mOrientationHelper<span class="token punctuation">.</span><span class="token function">getTransformedEndWithDecoration</span><span class="token punctuation">(</span>child<span class="token punctuation">)</span> <span class="token operator">></span> limit<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                    <span class="token comment" spellcheck="true">// stop here</span>
+                    <span class="token function">recycleChildren</span><span class="token punctuation">(</span>recycler<span class="token punctuation">,</span> childCount <span class="token operator">-</span> <span class="token number">1</span><span class="token punctuation">,</span> i<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                    <span class="token keyword">return</span><span class="token punctuation">;</span>
+                <span class="token punctuation">}</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token punctuation">{</span>
+            <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token keyword">int</span> i <span class="token operator">=</span> <span class="token number">0</span><span class="token punctuation">;</span> i <span class="token operator">&lt;</span> childCount<span class="token punctuation">;</span> i<span class="token operator">++</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                View child <span class="token operator">=</span> <span class="token function">getChildAt</span><span class="token punctuation">(</span>i<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                <span class="token keyword">if</span> <span class="token punctuation">(</span>mOrientationHelper<span class="token punctuation">.</span><span class="token function">getDecoratedEnd</span><span class="token punctuation">(</span>child<span class="token punctuation">)</span> <span class="token operator">></span> limit
+                        <span class="token operator">||</span> mOrientationHelper<span class="token punctuation">.</span><span class="token function">getTransformedEndWithDecoration</span><span class="token punctuation">(</span>child<span class="token punctuation">)</span> <span class="token operator">></span> limit<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                    <span class="token comment" spellcheck="true">// stop here</span>
+                    <span class="token function">recycleChildren</span><span class="token punctuation">(</span>recycler<span class="token punctuation">,</span> <span class="token number">0</span><span class="token punctuation">,</span> i<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                    <span class="token keyword">return</span><span class="token punctuation">;</span>
+                <span class="token punctuation">}</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>看代码的第一句，如果dt&lt;0就直接返回结束了，这也解释了为什么前面的纠结为什么当mAvailable &lt; 0时候让mScrollingOffset加上mAvailable,就是为了让这里传入的dt是正值，也就是实际发生的滑动距离。由于不考虑逆序布局，直接看第二个for循环，其实这个循环要表达的意思是从头到尾遍历所有View直到找到一个滑动之后底部还没出界的View，那么在这个View之前的View全部要被回收掉。所谓回收掉就是把View节点从ViewHierarchy上删除掉了，但是被缓存起来了供重新绑定和重用。</p>
+<p>继续往fill方法下面看，进入while循环</p>
+<pre class="line-numbers language-java"><code class="language-java">      <span class="token keyword">while</span> <span class="token punctuation">(</span><span class="token punctuation">(</span>layoutState<span class="token punctuation">.</span>mInfinite <span class="token operator">||</span> remainingSpace <span class="token operator">></span> <span class="token number">0</span><span class="token punctuation">)</span> <span class="token operator">&amp;&amp;</span> layoutState<span class="token punctuation">.</span><span class="token function">hasMore</span><span class="token punctuation">(</span>state<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            layoutChunkResult<span class="token punctuation">.</span><span class="token function">resetInternal</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span>VERBOSE_TRACING<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                TraceCompat<span class="token punctuation">.</span><span class="token function">beginSection</span><span class="token punctuation">(</span><span class="token string">"LLM LayoutChunk"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+            <span class="token function">layoutChunk</span><span class="token punctuation">(</span>recycler<span class="token punctuation">,</span> state<span class="token punctuation">,</span> layoutState<span class="token punctuation">,</span> layoutChunkResult<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span>VERBOSE_TRACING<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                TraceCompat<span class="token punctuation">.</span><span class="token function">endSection</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span>layoutChunkResult<span class="token punctuation">.</span>mFinished<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                <span class="token keyword">break</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+            layoutState<span class="token punctuation">.</span>mOffset <span class="token operator">+=</span> layoutChunkResult<span class="token punctuation">.</span>mConsumed <span class="token operator">*</span> layoutState<span class="token punctuation">.</span>mLayoutDirection<span class="token punctuation">;</span>
+            <span class="token comment" spellcheck="true">/**
+             * Consume the available space if:
+             * * layoutChunk did not request to be ignored
+             * * OR we are laying out scrap children
+             * * OR we are not doing pre-layout
+             */</span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token operator">!</span>layoutChunkResult<span class="token punctuation">.</span>mIgnoreConsumed <span class="token operator">||</span> mLayoutState<span class="token punctuation">.</span>mScrapList <span class="token operator">!=</span> null
+                    <span class="token operator">||</span> <span class="token operator">!</span>state<span class="token punctuation">.</span><span class="token function">isPreLayout</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                layoutState<span class="token punctuation">.</span>mAvailable <span class="token operator">-=</span> layoutChunkResult<span class="token punctuation">.</span>mConsumed<span class="token punctuation">;</span>
+                <span class="token comment" spellcheck="true">// we keep a separate remaining space because mAvailable is important for recycling</span>
+                remainingSpace <span class="token operator">-=</span> layoutChunkResult<span class="token punctuation">.</span>mConsumed<span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+
+            <span class="token keyword">if</span> <span class="token punctuation">(</span>layoutState<span class="token punctuation">.</span>mScrollingOffset <span class="token operator">!=</span> LayoutState<span class="token punctuation">.</span>SCROLLING_OFFSET_NaN<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                layoutState<span class="token punctuation">.</span>mScrollingOffset <span class="token operator">+=</span> layoutChunkResult<span class="token punctuation">.</span>mConsumed<span class="token punctuation">;</span>
+                <span class="token keyword">if</span> <span class="token punctuation">(</span>layoutState<span class="token punctuation">.</span>mAvailable <span class="token operator">&lt;</span> <span class="token number">0</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                    layoutState<span class="token punctuation">.</span>mScrollingOffset <span class="token operator">+=</span> layoutState<span class="token punctuation">.</span>mAvailable<span class="token punctuation">;</span>
+                <span class="token punctuation">}</span>
+                <span class="token function">recycleByLayoutState</span><span class="token punctuation">(</span>recycler<span class="token punctuation">,</span> layoutState<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span>stopOnFocusable <span class="token operator">&amp;&amp;</span> layoutChunkResult<span class="token punctuation">.</span>mFocusable<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                <span class="token keyword">break</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span>
+<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>只要还有可用空间就依次取 View 并添加layout出来，之后更新mOffset和mAvailable,当然如果某个view是有焦点的，那么直接结束</p>
+<p>看LayoutChunk方法，顾名思义，就是layout小块的意思，就是把单个的itemView放置到合适的位置，并且传入了一个LayoutResult用于记录放置Item后的信息，就几个字段：<br> mConsumed 消耗的距离<br> mFinished 是否结束layout<br> mIgnoreConsumed 是否忽略此次消耗的距离，滑动情况下这个值一直都是false<br> mFocusable 当前item是否有焦点</p>
+<p> layoutChunk方法里面的逻辑，也没什么，就是测量，然后计算left top right bottom值。有一段逻辑比较重要，判断了mScrapList 是否为null，如果是null就调用了addDisappearingView方法，反之调用了addView;addView方法不用说就是简单的添加了View，但是addDisappearingView就是告诉RV，添加的这个View是马上就要移出屏幕的，注意是不可见了并不代表就是item被移除了也有可能是在屏幕之外。好了，我们再回头想象为什么是判断mScrapList为null就调用addDisappearingView。具体原因是mScapList其实绝大部分情况都是null，只有发生layout时候才不为空，而这个时候都是发生了item的增删改操作，导致有些View可能会超出RV的边界，也就是变成所谓的“hidden view”，不要被这个方法名迷惑，只是尝试加入hidden view，方法内部实际还是会根据flag判断之后决定是否需要hide 这个view。反过来mScrapList为null的时候就是对应滑动情况。</p>
+<p>layoutChunk 方法内容不多，另外还需要注意的是这句：</p>
+<pre class="line-numbers language-java"><code class="language-java">    <span class="token keyword">if</span> <span class="token punctuation">(</span>params<span class="token punctuation">.</span><span class="token function">isItemRemoved</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">||</span> params<span class="token punctuation">.</span><span class="token function">isItemChanged</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            result<span class="token punctuation">.</span>mIgnoreConsumed <span class="token operator">=</span> <span class="token boolean">true</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
+<p> 意思很简单，就是Item被删除了或者变化了，就忽略消耗，也就是不计入消耗。最开始我也觉得奇怪，后来知道动画之后明白这么做是有意义的，虽然这个Item被删除了，但是你不能立马就给不显示了还是添加进来，毕竟还有动画在这个Item要执行，所以就得等到这个Item的动画完了才删除。那么不计入消耗的好处就是，会多layout一个Item出来，就是在底部，屏幕外面，虽然不可见，如图：<br> <img src="https://github.com/HirayClay/draft/blob/master/rv_removed.png?raw=true" alt=""><br> item 2已经被移除了，并且item5会被加进来，但是在屏幕外我们看不到，等到item2动画结束item5就会滑进来。当然这个if判断在滑动情况下是不会进来的。</p>
+<p> 最后，所有的view添加完之后，其实view并没有在正确的位置，所以整体又进行平移，至此整个滑动流程都结束</p>
+<p>the end</p>
+
+  </div>
+  <!--评论块-->
+    
+
+</article>
+<nav class="post-nav">
+  <!-- Prev Nav -->
+    
+  <a href="/2018/01/05/Parcelable/" id="post_nav-newer" class="post-nav-content prev-content">
+      新篇
+  </a>
+    
+
+
+  <!-- Next Nav -->
+    
+  <a href="/2017/09/05/Hexo-github搭建个人博客/" id="post_nav-older" class="post-nav-content next-content">
+      旧篇
+  </a>
+    
+</nav>
+<div class="post-toc-btn"><i class="material-icons">format_list_numbered</i></div>
+<div class="post-toc-none"><p>(无)</p></div>
+<div class="post-toc-box">
+    
+</div>
+<!--<div class="post-back"><i class="material-icons">arrow_back</i></div>-->
+<script type="text/javascript">
+    menu();
+</script>
+  </div>
+</div>
+<div id="bottom-outer">
+  <div id="bottom-inner">
+    <a  id="top-button" onfocus="this.blur();"><div class="up upinbody" style="background-color:#26A69A"><i class="material-icons material-up">vertical_align_top</i></div></a>
+
+
+<p style="line-height: 45px">Copyright ©  2017  Blog</p>
+<p style="line-height: 45px">Powered by <a href="https://hexo.io/" target="_blank"> Hexo </a> && Theme - <a href="https://github.com/moumao/hexo-theme-Vateral" target="_blank">Vateral</a></p>
+
+  </div>
+</div>
+
+<!--影集界面需要的资源-->
+
+
+
+<!-- scripts list from theme config.yml -->
+
+<script src="/js/jquery-3.1.1.min.js"></script>
+
+<script src="/js/materialize.min.js"></script>
+
+<script src="/js/main.min.js"></script>
+
+
+<script>
+    NProgress.start();
+    NProgress.done();
+    lazy();
+    links();
+    window.onpopstate = menu();
+    //pjax操作
+    $(document).pjax('a:not(.nopjax)', '#content-inner', {fragment:'#content-inner', timeout:8000});
+    $(document).on('pjax:start', NProgress.start).on('pjax:end', NProgress.done)
+        .on('pjax:end', () => {
+            dowmdiv();
+            lazy();
+            toc();
+            links();
+            menu();
+        });
+</script>
+
+</body>
+</html>

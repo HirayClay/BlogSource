@@ -1,0 +1,958 @@
+<?xml version="1.0" encoding="utf-8"?>
+<search> 
+  
+    
+    <entry>
+      <title><![CDATA[关于事件机制的总结]]></title>
+      <url>/2018/04/19/%E5%85%B3%E4%BA%8E%E4%BA%8B%E4%BB%B6%E6%9C%BA%E5%88%B6%E7%9A%84%E6%80%BB%E7%BB%93/</url>
+      <content type="html"><![CDATA[<p>事件分发影响到自定义控件以及处理一些特殊问题时候特别有用，一直没有总结一下，导致<br>在碰到问题的时候思路不够清晰，其实对于单个View的事件分发其实很简单，稍微复杂点的其实<br>是在有ViewGroup的情况下。也不用举什么例子，直接就总结吧：<br>针对单个View<br>所有的事件都从ACTION_DOWN开始，入口是dispatchTouchEvent,因为对于单个View没有拦截之说，所以在dispatchTouchEvent里面只是判断View有没有设置touch监听或者点击，如果有，那么事件就接管了，后续的事件都会直接发给这个View</p>
+<p>针对ViewGroup：<br>一共有三个方法 dispatchTouchEvent onInterceptTouchEvent onTouchEvent,主要是说清楚这三个方法之间的关系</p>
+<p>dispatchTouch一样是入口，同样是从ACTION_DOWN开始，先是在dispatchTouchEvent里面调用了onInterceptTouchEvent，问ViewGroup自己需要拦截吗，如果拦截了，那么后续事件就交给ViewGroup的onTouchEvent,当然后续事件调用的方法顺序就是：dispatchTouchEvent(ViewGroup)————&gt;onTouchEvent(ViewGroup);但是如果ACTION_DOWN事件被子View接管了，那么后续事件的调用的顺序：<br>dispatchTouchEvent(ViewGroup)————&gt;onInterceptTouchEvent(ViewGroup)————&gt;onTouchEvent(View)<br>但是如果View接管了事件，但是后续事件被ViewGroup拦截了的话，那么View还是会收到一个Cancel事件</p>
+<p>以上的总结本身在ViewGroup的onInterceptTouchEvent方法中有注释，之前没耐心看，最近因为和事件分发走的近，必须好好看懂这一块</p>
+<p>总之View只有一次机会来接管事件，也就是在ACTION_DOWN传过来的时候，不然以后都没机会了，直到下一次ACTION_DOWN来临。假如谁都不管这个事件，那么最后就会一直冒泡到Activity的onTouchEvent中去（这个很好验证，写个空白布局，重写下Activity的onTouchEvent，里面打个日志就知道了 ）因为如此，Android也推出了嵌套滚动，其实就是让子View无脑接管事件，但是呢，会在处理事件前先给parent处理，然后剩下的给自己，这样就让有些不好实现的效果（比如联动）好做很多</p>
+]]></content>
+      
+        
+        <tags>
+            
+            <tag> Android </tag>
+            
+            <tag> 事件分发 </tag>
+            
+        </tags>
+        
+    </entry>
+    
+    <entry>
+      <title><![CDATA[关于DataBinding的一些知识]]></title>
+      <url>/2018/04/11/%E5%85%B3%E4%BA%8EDataBinding%E7%9A%84%E4%B8%80%E4%BA%9B%E7%9F%A5%E8%AF%86/</url>
+      <content type="html"><![CDATA[<p>Android的DataBinding出来很久了，但是因为我一直用的mvp，出来的时候就简单的 开启了enable =true这句代码弄了下搞了个简单的layout布局就没管了（好吧，貌似只能算单向绑定=_=）。然后最近想深入的看下DataBinding，比如自定义的控件怎么实现双向绑定,一步一步来吧，其实东西真的不多，不过很强大,基本都是注解。</p>
+<p>###简单的绑定<br>先建立一个Worker类：</p>
+<pre class="line-numbers language-java"><code class="language-java">    <span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Worker</span> <span class="token punctuation">{</span>
+
+    <span class="token keyword">public</span> <span class="token keyword">int</span> workerId<span class="token punctuation">;</span>
+    <span class="token keyword">public</span> String name<span class="token punctuation">;</span>
+    <span class="token keyword">public</span> <span class="token keyword">int</span> wage<span class="token punctuation">;</span>
+    <span class="token keyword">public</span> String photoUrl<span class="token punctuation">;</span>
+    <span class="token keyword">public</span> <span class="token keyword">int</span> photoId<span class="token punctuation">;</span>
+
+    <span class="token keyword">public</span> <span class="token function">Worker</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    <span class="token punctuation">}</span>
+
+
+    <span class="token keyword">public</span> <span class="token function">Worker</span><span class="token punctuation">(</span><span class="token keyword">int</span> workerId<span class="token punctuation">,</span> String name<span class="token punctuation">,</span> <span class="token keyword">int</span> wage<span class="token punctuation">,</span> <span class="token keyword">int</span> photoId<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token keyword">this</span><span class="token punctuation">.</span>workerId <span class="token operator">=</span> workerId<span class="token punctuation">;</span>
+        <span class="token keyword">this</span><span class="token punctuation">.</span>name <span class="token operator">=</span> name<span class="token punctuation">;</span>
+        <span class="token keyword">this</span><span class="token punctuation">.</span>wage <span class="token operator">=</span> wage<span class="token punctuation">;</span>
+        <span class="token keyword">this</span><span class="token punctuation">.</span>photoId <span class="token operator">=</span> photoId<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>这是一个简单的布局文件(data_binding_layout.xml)，在TextView上显示Worker的名字：</p>
+<pre class="line-numbers language-xml"><code class="language-xml">    <span class="token prolog">&lt;?xml version="1.0" encoding="utf-8"?></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>layout</span> <span class="token attr-name"><span class="token namespace">xmlns:</span>android</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>http://schemas.android.com/apk/res/android<span class="token punctuation">"</span></span><span class="token punctuation">></span></span>
+
+
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>data</span><span class="token punctuation">></span></span>
+
+        <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>variable</span>
+            <span class="token attr-name">name</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>worker<span class="token punctuation">"</span></span>
+            <span class="token attr-name">type</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>com.hiray.mvvm.mvvm.model.Worker<span class="token punctuation">"</span></span> <span class="token punctuation">/></span></span>
+
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>data</span><span class="token punctuation">></span></span>
+
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>TextView</span>
+        <span class="token attr-name"><span class="token namespace">android:</span>layout_width</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>120dp<span class="token punctuation">"</span></span>
+        <span class="token attr-name"><span class="token namespace">android:</span>layout_height</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>wrap_content<span class="token punctuation">"</span></span>
+        <span class="token attr-name"><span class="token namespace">android:</span>text</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>@{worker.name}<span class="token punctuation">"</span></span> <span class="token punctuation">/></span></span>  
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>layout</span><span class="token punctuation">></span></span>
+<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>会根据布局文件名字生成一个ViewDataBinding对象————DataBindingLayoutBinding,在代码中设置一下：</p>
+<pre class="line-numbers language-java"><code class="language-java">       <span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">DataBindingActivity</span> <span class="token keyword">extends</span> <span class="token class-name">AppCompatActivity</span> <span class="token punctuation">{</span>
+            <span class="token annotation punctuation">@Override</span>
+            <span class="token keyword">protected</span> <span class="token keyword">void</span> <span class="token function">onCreate</span><span class="token punctuation">(</span>Bundle savedInstanceState<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                <span class="token keyword">super</span><span class="token punctuation">.</span><span class="token function">onCreate</span><span class="token punctuation">(</span>savedInstanceState<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                DataBindingLayoutBinding binding <span class="token operator">=</span> DataBindingUtil<span class="token punctuation">.</span><span class="token function">setContentView</span><span class="token punctuation">(</span><span class="token keyword">this</span><span class="token punctuation">,</span> R<span class="token punctuation">.</span>layout<span class="token punctuation">.</span>data_binding_layout<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                binding<span class="token punctuation">.</span><span class="token function">setWorker</span><span class="token punctuation">(</span><span class="token keyword">new</span> <span class="token class-name">Worker</span><span class="token punctuation">(</span><span class="token number">1205</span><span class="token punctuation">,</span> <span class="token string">"Mike"</span><span class="token punctuation">,</span> <span class="token number">12000</span><span class="token punctuation">,</span> R<span class="token punctuation">.</span>mipmap<span class="token punctuation">.</span>boy<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span>
+<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>以上是非常简单的一种绑定，只是单向的数据绑定，数据映射到UI上<br>关于这样的单向绑定有好几个注解</p>
+<h3 id="BindingMethods、BindingMethod"><a href="#BindingMethods、BindingMethod" class="headerlink" title="BindingMethods、BindingMethod"></a>BindingMethods、BindingMethod</h3><p>比如我想给ImageView加上自定义的属性下载图片</p>
+<pre class="line-numbers language-xml"><code class="language-xml">        <span class="token prolog">&lt;?xml version="1.0" encoding="utf-8"?></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>layout</span> <span class="token attr-name"><span class="token namespace">xmlns:</span>android</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>http://schemas.android.com/apk/res/android<span class="token punctuation">"</span></span><span class="token punctuation">></span></span>
+
+
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>data</span><span class="token punctuation">></span></span>
+
+        <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>variable</span>
+            <span class="token attr-name">name</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>worker<span class="token punctuation">"</span></span>
+            <span class="token attr-name">type</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>com.hiray.mvvm.mvvm.model.Worker<span class="token punctuation">"</span></span> <span class="token punctuation">/></span></span>
+
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>data</span><span class="token punctuation">></span></span>
+
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>ImageView</span>
+        <span class="token attr-name"><span class="token namespace">app:</span>imageDrawable</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>@{worker.photoId}<span class="token punctuation">"</span></span>
+        <span class="token attr-name"><span class="token namespace">android:</span>layout_width</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>50dp<span class="token punctuation">"</span></span>
+        <span class="token attr-name"><span class="token namespace">android:</span>layout_height</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>50dp<span class="token punctuation">"</span></span><span class="token punctuation">/></span></span>  
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>layout</span><span class="token punctuation">></span></span>
+<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>这里”app:imageDrawable”这个属性是无法被识别的，会编译出错，我们要通过某种方式告诉系统该怎么做。我们建立一个类 ViewBindingAdapter，使用BindingMethods和BindingMethod注解：</p>
+<pre class="line-numbers language-java"><code class="language-java"><span class="token annotation punctuation">@BindingMethods</span><span class="token punctuation">(</span>
+        <span class="token annotation punctuation">@BindingMethod</span><span class="token punctuation">(</span>
+                type <span class="token operator">=</span> ImageView<span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">,</span>
+                attribute <span class="token operator">=</span> <span class="token string">"app:imageDrawable"</span><span class="token punctuation">,</span>
+                method <span class="token operator">=</span> <span class="token string">"setImageResource"</span>
+        <span class="token punctuation">)</span>
+<span class="token punctuation">)</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">ImageAttr</span> <span class="token punctuation">{</span>
+
+
+<span class="token punctuation">}</span>
+<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>其中type是你要绑定的类，attribute是你自己定的,method是ImageView中的方法，也就是告诉ImageView，在xml中碰到app:imageDrawable属性的时候调用ImageView的setImageResource方法。<br>但是如果我此时不想传入图片id，而是传入一个id的String字符，那怎么办呢，因为ImageView并没有接收String参数来设置图片的方法，那么我们要利用BindConversion转换一下</p>
+<h3 id="BindingConversion"><a href="#BindingConversion" class="headerlink" title="BindingConversion"></a>BindingConversion</h3><pre class="line-numbers language-java"><code class="language-java">
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">ImageAttr</span> <span class="token punctuation">{</span>
+
+    <span class="token annotation punctuation">@BindingConversion</span>
+    <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">int</span> <span class="token function">convertStringToResId</span><span class="token punctuation">(</span>String idString<span class="token punctuation">)</span><span class="token punctuation">{</span>
+        <span class="token keyword">return</span> Integer<span class="token punctuation">.</span><span class="token function">parseInt</span><span class="token punctuation">(</span>idString<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+<span class="token punctuation">}</span>
+<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>但是有些时候即使转换了，也没有对应的setter方法可以使用，比如你设置drawableLeft这种属性的时候，是没有setDrawableLeft方法的，只有setCompoundDrawable,那么这时候就可以使用 BindingAdapter这个注解了</p>
+<h3 id="BindingAdapter"><a href="#BindingAdapter" class="headerlink" title="BindingAdapter"></a>BindingAdapter</h3><p>顾名思义是绑定适配器，如果像设置的属性没有直接的方法，需要转换一下，那么就用到这个注解，比如设置drawableLeft,是没有setDrawableLeft方法的，必须调用view的setCompoundDrawables</p>
+<pre class="line-numbers language-java"><code class="language-java">
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">ImageAttr</span> <span class="token punctuation">{</span>
+
+    <span class="token annotation punctuation">@BindingAdapter</span><span class="token punctuation">(</span><span class="token string">"app:drawableLeft"</span><span class="token punctuation">)</span>
+    <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">bindDrawableLeft</span><span class="token punctuation">(</span>TextView view<span class="token punctuation">,</span> Drawable leftDrawable<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        view<span class="token punctuation">.</span><span class="token function">setCompoundDrawables</span><span class="token punctuation">(</span>leftDrawable<span class="token punctuation">,</span> null<span class="token punctuation">,</span> null<span class="token punctuation">,</span> null<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+<span class="token punctuation">}</span>
+<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<h3 id="InverseMethod"><a href="#InverseMethod" class="headerlink" title="InverseMethod"></a>InverseMethod</h3><p>在双向绑定中，需要对值进行转换<br>比如我们有个checkbox，如果model中的一个String类型的值是“Alice”就让checkbox选上，反之不勾选，这里就要用到InverseMethod注解<br>新建一个Converter类，写了两个静态方法：</p>
+<pre class="line-numbers language-java"><code class="language-java">    <span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Converter</span> <span class="token punctuation">{</span>
+
+    <span class="token annotation punctuation">@InverseMethod</span><span class="token punctuation">(</span><span class="token string">"convertStringToBool"</span><span class="token punctuation">)</span>
+    <span class="token keyword">public</span> <span class="token keyword">static</span> String <span class="token function">convertBoolToString</span><span class="token punctuation">(</span><span class="token keyword">boolean</span> b<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>b<span class="token punctuation">)</span>
+            <span class="token keyword">return</span> <span class="token string">"Alice"</span><span class="token punctuation">;</span>
+        <span class="token keyword">else</span> <span class="token keyword">return</span> <span class="token string">"Unknown"</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">boolean</span> <span class="token function">convertStringToBool</span><span class="token punctuation">(</span>String name<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token keyword">return</span> <span class="token string">"Alice"</span><span class="token punctuation">.</span><span class="token function">equals</span><span class="token punctuation">(</span>name<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>布局文件：</p>
+<pre class="line-numbers language-xml"><code class="language-xml">    <span class="token prolog">&lt;?xml version="1.0" encoding="utf-8"?></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>layout</span> <span class="token attr-name"><span class="token namespace">xmlns:</span>android</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>http://schemas.android.com/apk/res/android<span class="token punctuation">"</span></span>
+    <span class="token attr-name"><span class="token namespace">xmlns:</span>app</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>http://schemas.android.com/apk/res-auto<span class="token punctuation">"</span></span><span class="token punctuation">></span></span>
+
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>data</span><span class="token punctuation">></span></span>
+        <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>variable</span>
+            <span class="token attr-name">name</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>person<span class="token punctuation">"</span></span>
+            <span class="token attr-name">type</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>com.hiray.mvvm.mvvm.model.Person<span class="token punctuation">"</span></span><span class="token punctuation">/></span></span>
+        <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>import</span> <span class="token attr-name">type</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>com.hiray.mvvm.mvvm.attr.Converter<span class="token punctuation">"</span></span><span class="token punctuation">/></span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>data</span><span class="token punctuation">></span></span>
+
+        <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>android.support.v7.widget.AppCompatCheckBox</span>
+            <span class="token attr-name"><span class="token namespace">android:</span>checked</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>@<span class="token punctuation">=</span>{Converter.convertStringToBool(person.personName)}<span class="token punctuation">"</span></span>
+            <span class="token attr-name"><span class="token namespace">android:</span>layout_width</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>wrap_content<span class="token punctuation">"</span></span>
+            <span class="token attr-name"><span class="token namespace">android:</span>layout_height</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>wrap_content<span class="token punctuation">"</span></span> <span class="token punctuation">/></span></span>
+
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>layout</span><span class="token punctuation">></span></span>
+<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<h3 id="给自定义控件支持双向绑定"><a href="#给自定义控件支持双向绑定" class="headerlink" title="给自定义控件支持双向绑定"></a>给自定义控件支持双向绑定</h3><p>这里有个自定义的BlinkView，不停的闪烁，由一个bool 类型的值 blink控制是否闪烁，伪代码如下：</p>
+<pre class="line-numbers language-java"><code class="language-java">    <span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">BlinkView</span> <span class="token keyword">extends</span> <span class="token class-name">View</span> <span class="token punctuation">{</span>
+
+    <span class="token keyword">private</span> Paint paint<span class="token punctuation">;</span>
+    <span class="token keyword">boolean</span> blink <span class="token operator">=</span> <span class="token boolean">true</span><span class="token punctuation">;</span>
+    <span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span>
+
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">setBlink</span><span class="token punctuation">(</span><span class="token keyword">boolean</span> blink<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token keyword">this</span><span class="token punctuation">.</span>blink <span class="token operator">=</span> blink<span class="token punctuation">;</span>
+        <span class="token function">invalidate</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">public</span> <span class="token keyword">boolean</span> <span class="token function">getBlink</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">{</span>
+        <span class="token keyword">return</span> blink<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">toggle</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token function">setBlink</span><span class="token punctuation">(</span><span class="token operator">!</span>blink<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>onBlinkChangeListener <span class="token operator">!=</span> null<span class="token punctuation">)</span>
+            onBlinkChangeListener<span class="token punctuation">.</span><span class="token function">onBlinkChange</span><span class="token punctuation">(</span>blink<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">public</span> <span class="token keyword">interface</span> <span class="token class-name">OnBlinkChangeListener</span> <span class="token punctuation">{</span>
+        <span class="token keyword">void</span> <span class="token function">onBlinkChange</span><span class="token punctuation">(</span><span class="token keyword">boolean</span> blink<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">private</span> OnBlinkChangeListener onBlinkChangeListener<span class="token punctuation">;</span>
+
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">setOnBlinkChangeListener</span><span class="token punctuation">(</span>OnBlinkChangeListener onBlinkChangeListener<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token keyword">this</span><span class="token punctuation">.</span>onBlinkChangeListener <span class="token operator">=</span> onBlinkChangeListener<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>layout文件中：</p>
+<pre class="line-numbers language-xml"><code class="language-xml"><span class="token prolog">&lt;?xml version="1.0" encoding="utf-8"?></span>
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>layout</span> <span class="token attr-name"><span class="token namespace">xmlns:</span>android</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>http://schemas.android.com/apk/res/android<span class="token punctuation">"</span></span><span class="token punctuation">></span></span>
+
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>data</span><span class="token punctuation">></span></span>
+
+        <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>variable</span>
+            <span class="token attr-name">name</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>data<span class="token punctuation">"</span></span>
+            <span class="token attr-name">type</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>com.hiray.mvvm.mvvm.model.DataHolder<span class="token punctuation">"</span></span> <span class="token punctuation">/></span></span>
+
+
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>data</span><span class="token punctuation">></span></span>
+        <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>com.hiray.mvvm.mvvm.widget.BlinkView</span>
+            <span class="token attr-name"><span class="token namespace">android:</span>layout_width</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>wrap_content<span class="token punctuation">"</span></span>
+            <span class="token attr-name"><span class="token namespace">android:</span>layout_height</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>wrap_content<span class="token punctuation">"</span></span>
+            <span class="token attr-name"><span class="token namespace">app:</span>blink</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>@<span class="token punctuation">=</span>{data.blink}<span class="token punctuation">"</span></span>
+            <span class="token attr-name"><span class="token namespace">app:</span>blinkColor</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>@color/colorAccent<span class="token punctuation">"</span></span> <span class="token punctuation">/></span></span>
+
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>layout</span><span class="token punctuation">></span></span>
+<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>这样写显然不会有任何效果，建立一个名为BlinkViewAdapter的类，使用InverseBindingMethods注解告诉Android在遇到app:blink属性的时候怎么把数据映射到UI上，然后又要告诉AndroidUI怎么映射到数据上，代码如下：</p>
+<pre class="line-numbers language-java"><code class="language-java">    <span class="token annotation punctuation">@InverseBindingMethods</span><span class="token punctuation">(</span>
+        <span class="token annotation punctuation">@InverseBindingMethod</span><span class="token punctuation">(</span>type <span class="token operator">=</span> BlinkView<span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">,</span>
+                attribute <span class="token operator">=</span> <span class="token string">"blink"</span><span class="token punctuation">)</span>
+<span class="token punctuation">)</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">BlinkViewAdapter</span> <span class="token punctuation">{</span>
+
+<span class="token comment" spellcheck="true">//    @InverseBindingAdapter(attribute = "app:blink")</span>
+<span class="token comment" spellcheck="true">//    public static boolean isBlink(BlinkView view) {</span>
+<span class="token comment" spellcheck="true">//        return view.getBlink();</span>
+<span class="token comment" spellcheck="true">//    }</span>
+
+    <span class="token annotation punctuation">@BindingAdapter</span><span class="token punctuation">(</span>value <span class="token operator">=</span> <span class="token punctuation">{</span><span class="token string">"app:blinkChanged"</span><span class="token punctuation">,</span> <span class="token string">"app:blinkAttrChanged"</span><span class="token punctuation">}</span><span class="token punctuation">,</span> requireAll <span class="token operator">=</span> <span class="token boolean">false</span><span class="token punctuation">)</span>
+    <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">setListener</span><span class="token punctuation">(</span>BlinkView view<span class="token punctuation">,</span> BlinkView<span class="token punctuation">.</span>OnBlinkChangeListener listener<span class="token punctuation">,</span>
+                                   <span class="token keyword">final</span> InverseBindingListener attrChange<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>attrChange <span class="token operator">==</span> null <span class="token operator">&amp;&amp;</span> listener <span class="token operator">!=</span> null<span class="token punctuation">)</span>
+            view<span class="token punctuation">.</span><span class="token function">setOnBlinkChangeListener</span><span class="token punctuation">(</span>listener<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">else</span> view<span class="token punctuation">.</span><span class="token function">setOnBlinkChangeListener</span><span class="token punctuation">(</span><span class="token keyword">new</span> <span class="token class-name">BlinkView<span class="token punctuation">.</span>OnBlinkChangeListener</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            <span class="token annotation punctuation">@Override</span>
+            <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">onBlinkChange</span><span class="token punctuation">(</span><span class="token keyword">boolean</span> blink<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                attrChange<span class="token punctuation">.</span><span class="token function">onChange</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token punctuation">}</span>
+
+<span class="token punctuation">}</span>
+<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>其中InverseBindingMethod注解有三个参数：type表示你要绑定的类，attribute就是你要进行绑定的属性（就是写在xml上的属性），method默认按照属性名字去找有没有 isXX 或者getXX方法，不然你就写上method名字，如果没有直接的method名字，可以使用InverseBindingAdapter注解（代码中注释的部分），这是告诉系统在UI发生变化的时候调用什么方法获取UI信息这里Android默认是按照属性名字去找有没有 xxAttrChanged的（如果你自己没有定义的话），当然这个event可以自己定义，比如你定义成”abcdefg&amp;%##$”,那么上面setListener方法的BindingAdapter注解的”app:blinkAttrChanged”也得改成这个。<br>另外setListener有三个参数，第一个是控件BlinkView自己，第二个是BlinkView.OnBlinkChangeListener 和”app:blinkChanged”对应；第三个是InverseBindingListener是必须的，这个参数的实现在编译期就生成了，就是通知系统UI变化了，要更新ui信息到数据上（更新的方法就是前面的第一部分），可以看下生成的attrChange:</p>
+<pre class="line-numbers language-java"><code class="language-java">     <span class="token keyword">private</span> android<span class="token punctuation">.</span>databinding<span class="token punctuation">.</span>InverseBindingListener mboundView3blinkAttrChange <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">android<span class="token punctuation">.</span>databinding<span class="token punctuation">.</span>InverseBindingListener</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token annotation punctuation">@Override</span>
+        <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">onChange</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            <span class="token comment" spellcheck="true">// Inverse of data.blink</span>
+            <span class="token comment" spellcheck="true">//         is data.setBlink((boolean) callbackArg_0)</span>
+            <span class="token keyword">boolean</span> callbackArg_0 <span class="token operator">=</span> mboundView3<span class="token punctuation">.</span><span class="token function">getBlink</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token comment" spellcheck="true">// localize variables for thread safety</span>
+            <span class="token comment" spellcheck="true">// data.blink</span>
+            <span class="token keyword">boolean</span> dataBlink <span class="token operator">=</span> <span class="token boolean">false</span><span class="token punctuation">;</span>
+            <span class="token comment" spellcheck="true">// data != null</span>
+            <span class="token keyword">boolean</span> dataJavaLangObjectNull <span class="token operator">=</span> <span class="token boolean">false</span><span class="token punctuation">;</span>
+            <span class="token comment" spellcheck="true">// data</span>
+            com<span class="token punctuation">.</span>hiray<span class="token punctuation">.</span>mvvm<span class="token punctuation">.</span>mvvm<span class="token punctuation">.</span>model<span class="token punctuation">.</span>DataHolder data <span class="token operator">=</span> mData<span class="token punctuation">;</span>
+
+
+
+            dataJavaLangObjectNull <span class="token operator">=</span> <span class="token punctuation">(</span>data<span class="token punctuation">)</span> <span class="token operator">!=</span> <span class="token punctuation">(</span>null<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span>dataJavaLangObjectNull<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+
+
+
+
+                data<span class="token punctuation">.</span><span class="token function">setBlink</span><span class="token punctuation">(</span><span class="token punctuation">(</span><span class="token punctuation">(</span><span class="token keyword">boolean</span><span class="token punctuation">)</span> <span class="token punctuation">(</span>callbackArg_0<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span><span class="token punctuation">;</span>
+<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>看到这里其实就明白了，这里生成的东西都是根据前面的注解来的，收到刷新提示就会调用方法获取UI信息，并且更新数据模型中的值，由此完成了整个的双向的绑定</p>
+]]></content>
+      
+        
+        <tags>
+            
+            <tag> Android </tag>
+            
+            <tag> DataBinding </tag>
+            
+        </tags>
+        
+    </entry>
+    
+    <entry>
+      <title><![CDATA[自行处理Fling导致RecyclerView 滑动点击事件无效]]></title>
+      <url>/2018/04/02/%E8%87%AA%E8%A1%8C%E5%A4%84%E7%90%86Fling%E5%AF%BC%E8%87%B4RecyclerView-%E6%BB%91%E5%8A%A8%E7%82%B9%E5%87%BB%E4%BA%8B%E4%BB%B6%E6%97%A0%E6%95%88/</url>
+      <content type="html"><![CDATA[<p>之前写过StackLayoutManager,一个自定义的LayoutManager，最近有同学说滑动之后item 点击无效，发现是滑动之后第一次点击无效，再次点击才能触发点击事件。第一反应觉得很诧异，要么就不触发，怎么还要点击两次才能触发的。带着疑问我调试了一下RecyclerView的onInterceptTouchEvent方法。结果是fling一次后点击item ，onInterceptTouchEvent方法返回了true，也就是事件被拦截了，就是导致Item无法点击的原因，拦截的条件是mScrollState == STATE_DRAGGING。但是明显现在应该处于STATE_IDLE状态，fling之后手指已经离开屏幕了。所以继续追踪，发现RecyclerView的fling事件内部自己有处理，而且fling完之后，会将mScrollState重置为STATE_IDLE，但是因为StackLayoutManager是使用的setOnFlingListener方式，导致没有重置状态，所以之后的第一次点击mScrollState仍然处于STATE_DRAGGING状态，所以被拦截了。但是我们是第二次点击又是可以的，所以肯定是第一次点击的某个地方将mScrollState重置为STATE_IDLE了，找了下，发现RecyclerView的onTouchEvent方法有这么一句</p>
+<pre class="line-numbers language-java"><code class="language-java">                <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token operator">!</span><span class="token punctuation">(</span><span class="token punctuation">(</span>xvel <span class="token operator">!=</span> <span class="token number">0</span> <span class="token operator">||</span> yvel <span class="token operator">!=</span> <span class="token number">0</span><span class="token punctuation">)</span> <span class="token operator">&amp;&amp;</span> <span class="token function">fling</span><span class="token punctuation">(</span><span class="token punctuation">(</span><span class="token keyword">int</span><span class="token punctuation">)</span> xvel<span class="token punctuation">,</span> <span class="token punctuation">(</span><span class="token keyword">int</span><span class="token punctuation">)</span> yvel<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                    <span class="token function">setScrollState</span><span class="token punctuation">(</span>SCROLL_STATE_IDLE<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                <span class="token punctuation">}</span>
+<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
+<p>知道了前因后果之后，我们要做的就是自己处理fling之后应该将mScrollState重置为idle状态，但是RecylerView改变状态的方法并不对外暴露，所以最后我用了反射。</p>
+]]></content>
+      
+        
+        <tags>
+            
+            <tag> RecyclerView </tag>
+            
+            <tag> Fling ItemClick </tag>
+            
+        </tags>
+        
+    </entry>
+    
+    <entry>
+      <title><![CDATA[关于AndroidStudio下的idea目录]]></title>
+      <url>/2018/01/24/%E5%85%B3%E4%BA%8EAndroidStudio%E4%B8%8B%E7%9A%84idea%E7%9B%AE%E5%BD%95/</url>
+      <content type="html"><![CDATA[<p>这个目录一开始看名字只知道和我们工程的工作区间有关，到底是啥我没仔细看过。直到有一天，我不小心把这个文件的内容给删除了（可能是午睡趴在键盘上了），然后会导致工程一直报这个文件的错，于是乎我干脆把这个文件都删了。导致的结果是每次重新打开工程，之前打开过的文件全都不会自动打开，得一个个的点开，瞬间我就有点知道这个文件干嘛的了。其实就是记录我们最近的文件操作，比如你上次退出前打开过的文件，鼠标在哪个位置等等，比如：<br><img src="https://github.com/HirayClay/draft/blob/master/as-workspace.png?raw=true" alt=""><br>我最后鼠标停在红色标记处，也就是整个文件的第1行，第25个文字处</p>
+<p>那么在workspace.xml文件中会产生这么一条记录：<br><img src="https://github.com/HirayClay/draft/blob/master/as-workspace-record-shot.png?raw=true" alt=""><br>应该是下标从0开始的原因，记录的line = 0,column =24<br>可能没有这条记录，ctrl+s强制保存一次就有了</p>
+<p>当然workspace文件里面保存的还有其他信息，比如当然使用的gradle版本等信息</p>
+<p>所以最后我自然就去其他工程拷贝了一份直接放到idea目录下就ok了</p>
+]]></content>
+      
+        
+        <tags>
+            
+            <tag> AndroidStudio </tag>
+            
+        </tags>
+        
+    </entry>
+    
+    <entry>
+      <title><![CDATA[关于RecyclerView的一个有趣的事情]]></title>
+      <url>/2018/01/19/%E5%85%B3%E4%BA%8ERecyclerView%E7%9A%84%E4%B8%80%E4%B8%AA%E6%9C%89%E8%B6%A3%E7%9A%84%E4%BA%8B%E6%83%85/</url>
+      <content type="html"><![CDATA[<p>对于RecylcerView ，基本上第一印象就是View重用，但是真的明白怎么重用的吗，最近在写自定义LayoutManager,由此对RecylerView、LayoutManager、ItemAnimator整个之间的关系都比较的熟悉。不过回到标题上来，这个有趣的事情和RV的回收有关。</p>
+<p>比如页面上此时显示了前六条Item（第六个Item没有显示全），那么你肯定觉得不把第六条Item全部划进来，第七条就不会调用onCreateViewHolder进行创建；但事实是当我只要向上稍微滑出去一点就会创建第七个Item，这是不是和对RV的回收重用的印象有些矛盾？是的，按照常理，我根本都没有滑出第七个Item，你就创建了，好像不太对。</p>
+<p>最后我看了下源码，其实原因比较简单，得先贴一下滑动发生时候调用填充逻辑的方法代码（部分代码）：</p>
+<pre class="line-numbers language-java"><code class="language-java"> <span class="token keyword">int</span> <span class="token function">fill</span><span class="token punctuation">(</span>RecyclerView<span class="token punctuation">.</span>Recycler recycler<span class="token punctuation">,</span> LayoutState layoutState<span class="token punctuation">,</span>
+            RecyclerView<span class="token punctuation">.</span>State state<span class="token punctuation">,</span> <span class="token keyword">boolean</span> stopOnFocusable<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token keyword">int</span> remainingSpace <span class="token operator">=</span> layoutState<span class="token punctuation">.</span>mAvailable <span class="token operator">+</span> layoutState<span class="token punctuation">.</span>mExtra<span class="token punctuation">;</span>
+        LayoutChunkResult layoutChunkResult <span class="token operator">=</span> mLayoutChunkResult<span class="token punctuation">;</span>
+        <span class="token keyword">while</span> <span class="token punctuation">(</span><span class="token punctuation">(</span>layoutState<span class="token punctuation">.</span>mInfinite <span class="token operator">||</span> remainingSpace <span class="token operator">></span> <span class="token number">0</span><span class="token punctuation">)</span> <span class="token operator">&amp;&amp;</span> layoutState<span class="token punctuation">.</span><span class="token function">hasMore</span><span class="token punctuation">(</span>state<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            layoutChunkResult<span class="token punctuation">.</span><span class="token function">resetInternal</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token function">layoutChunk</span><span class="token punctuation">(</span>recycler<span class="token punctuation">,</span> state<span class="token punctuation">,</span> layoutState<span class="token punctuation">,</span> layoutChunkResult<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span>layoutChunkResult<span class="token punctuation">.</span>mFinished<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                <span class="token keyword">break</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+            layoutState<span class="token punctuation">.</span>mOffset <span class="token operator">+=</span> layoutChunkResult<span class="token punctuation">.</span>mConsumed <span class="token operator">*</span> layoutState<span class="token punctuation">.</span>mLayoutDirection<span class="token punctuation">;</span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span>layoutState<span class="token punctuation">.</span>mScrollingOffset <span class="token operator">!=</span> LayoutState<span class="token punctuation">.</span>SCROLLING_OFFSET_NaN<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                layoutState<span class="token punctuation">.</span>mScrollingOffset <span class="token operator">+=</span> layoutChunkResult<span class="token punctuation">.</span>mConsumed<span class="token punctuation">;</span>
+                <span class="token keyword">if</span> <span class="token punctuation">(</span>layoutState<span class="token punctuation">.</span>mAvailable <span class="token operator">&lt;</span> <span class="token number">0</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                    layoutState<span class="token punctuation">.</span>mScrollingOffset <span class="token operator">+=</span> layoutState<span class="token punctuation">.</span>mAvailable<span class="token punctuation">;</span>
+                <span class="token punctuation">}</span>
+                <span class="token function">recycleByLayoutState</span><span class="token punctuation">(</span>recycler<span class="token punctuation">,</span> layoutState<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token keyword">return</span> start <span class="token operator">-</span> layoutState<span class="token punctuation">.</span>mAvailable<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>因为当滑动发生的时候，填充的postion是从第七个Item开始的，所以第七个Item被创建了，但是呢，立马被 recycleByLayoutState(recycler, layoutState)这个方法给回收掉了，并且缓存了起来，毕竟第七个Item在屏幕外，所以被回收了，而且这个while跑了这一次就退出了，到了第七个Item真的出来的时候就直接从缓存里面取出来用了</p>
+<p>Note：”scrap” View指的是仍然有效可以直接拿来重用的VH，只是暂时脱离了RV。名字让人很误解。</p>
+]]></content>
+      
+        
+        <tags>
+            
+            <tag> -RecyclerView -Android </tag>
+            
+        </tags>
+        
+    </entry>
+    
+    <entry>
+      <title><![CDATA[迁移到Gradle3.0]]></title>
+      <url>/2018/01/11/%E8%BF%81%E7%A7%BB%E5%88%B0Gradle-Plugin-3/</url>
+      <content type="html"><![CDATA[<p>最近Gradle plugin更新到3.0之后出现了不少问题，不过官方也给出了迁移到3.0之后这些问题<br>的<a href="https://developer.android.com/studio/build/gradle-plugin-3-0-0-migration.html?utm_source=android-studio#update_gradle" target="_blank" rel="external">解决办法</a>。<br>无法翻墙的可以访问<a href="https://developer.android.google.cn/studio/build/gradle-plugin-3-0-0-migration.html?utm_source=android-studio#update_gradle" target="_blank" rel="external">国内站点</a></p>
+<p>更新到3.0之后，对应的gradle也必须更新到4.1，简单修改一下gradle.properties文件里面的<br>gradle地址为：https\://services.gradle.org/distributions/gradle-4.1-all.zip就可以了<br>值得注意的是 gradle plugin的更新现在在google仓库，所以得把google仓库加上</p>
+<pre class="line-numbers language-gradle"><code class="language-gradle">    repositories {
+        ...
+        // You need to add the following repository to download the
+        // new plugin.
+        google()
+    }
+<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<h3 id="变体区分依赖管理"><a href="#变体区分依赖管理" class="headerlink" title="变体区分依赖管理"></a>变体区分依赖管理</h3><p>翻译的不太合适，大意就是现在3.0以及之后都是采用新的依赖管理机制，比如module A依赖了 module B，那么在构建A 的debug变体时也会自动依赖B的debug版本，不像以前得这么写一句<br><br><em>debugCompile project(path: ‘:data’, configuration: ‘debug’)</em></p>
+<ol>
+<li>定义风味<br>如果要构建多种flavor(实在不想翻译成风味，意会就行)，那么必须给每种flavor指定flavorDimension</li>
+</ol>
+<p>2.构建错误<br>如果你给app 增减了一个叫做staging的 buildType,但是其依赖并没有叫做staging的buildType，那么就会报错：</p>
+<pre class="line-numbers language-groovy"><code class="language-groovy">    Error<span class="token punctuation">:</span>Failed to resolve<span class="token punctuation">:</span> Could not resolve project <span class="token punctuation">:</span>mylibrary<span class="token operator">.</span>
+Required by<span class="token punctuation">:</span>
+    project <span class="token punctuation">:</span>app
+<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
+<p>那么可以使用matchingFallbacks来指定合适的替代依赖,依赖debug,qa或者release，会依赖第一个找到的依赖</p>
+<pre class="line-numbers language-groovy"><code class="language-groovy"> buildTypes <span class="token punctuation">{</span>
+        debug <span class="token punctuation">{</span><span class="token punctuation">}</span>
+        release <span class="token punctuation">{</span><span class="token punctuation">}</span>
+        staging <span class="token punctuation">{</span>
+            <span class="token comment" spellcheck="true">// Specifies a sorted list of fallback build types that the</span>
+            <span class="token comment" spellcheck="true">// plugin should try to use when a dependency does not include a</span>
+            <span class="token comment" spellcheck="true">// "staging" build type. You may specify as many fallbacks as you</span>
+            <span class="token comment" spellcheck="true">// like, and the plugin selects the first build type that's</span>
+            <span class="token comment" spellcheck="true">// available in the dependency.</span>
+            matchingFallbacks <span class="token operator">=</span> <span class="token punctuation">[</span><span class="token string">'debug'</span><span class="token punctuation">,</span> <span class="token string">'qa'</span><span class="token punctuation">,</span> <span class="token string">'release'</span><span class="token punctuation">]</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>与之类似的是，如果flavorDimension缺失，也可以指定替代的flavorDimension,用法如下</p>
+<pre class="line-numbers language-groovy"><code class="language-groovy">    android <span class="token punctuation">{</span>
+    defaultConfig<span class="token punctuation">{</span>
+        missingDimensionStrategy <span class="token string">'minApi'</span><span class="token punctuation">,</span> <span class="token string">'minApi18'</span><span class="token punctuation">,</span> <span class="token string">'minApi23'</span>
+        missingDimensionStrategy <span class="token string">'abi'</span><span class="token punctuation">,</span> <span class="token string">'x86'</span><span class="token punctuation">,</span> <span class="token string">'arm64'</span>
+    <span class="token punctuation">}</span>
+    flavorDimensions <span class="token string">'tier'</span>
+    productFlavors <span class="token punctuation">{</span>
+        free <span class="token punctuation">{</span>
+            dimension <span class="token string">'tier'</span>
+            missingDimensionStrategy <span class="token string">'minApi'</span><span class="token punctuation">,</span> <span class="token string">'minApi23'</span><span class="token punctuation">,</span> <span class="token string">'minApi18'</span>
+        <span class="token punctuation">}</span>
+        paid <span class="token punctuation">{</span><span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<h3 id="为本地Module改变依赖配置"><a href="#为本地Module改变依赖配置" class="headerlink" title="为本地Module改变依赖配置"></a>为本地Module改变依赖配置</h3><p>由于区分变体依赖的原因，现在不需要像以前那样配置具体的依赖变体了，像debugImplementation debugCompile之类的用法都可以废弃了，如果遇到一下错误那都是这个原因</p>
+<pre class="line-numbers language-groovy"><code class="language-groovy">    Error<span class="token punctuation">:</span>Unable to resolve dependency <span class="token keyword">for</span> <span class="token string">':app@debug/compileClasspath'</span><span class="token punctuation">:</span>
+        Could not resolve project <span class="token punctuation">:</span>library<span class="token operator">.</span>
+    Error<span class="token punctuation">:</span>Unable to resolve dependency <span class="token keyword">for</span> <span class="token string">':app@release/compileClasspath'</span><span class="token punctuation">:</span>
+        Could not resolve project <span class="token punctuation">:</span>library<span class="token operator">.</span>
+<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span></span></code></pre>
+<p>应该改为以下配置：</p>
+<pre class="line-numbers language-groovy"><code class="language-groovy">    dependencies <span class="token punctuation">{</span>
+    <span class="token comment" spellcheck="true">// 该用法对本地module不再生效</span>
+    <span class="token comment" spellcheck="true">// debugImplementation project(path: ':library', configuration: 'debug')</span>
+    <span class="token comment" spellcheck="true">// releaseImplementation project(path: ':library', configuration: 'release')</span>
+
+    <span class="token comment" spellcheck="true">// 简单的一句implementation就可以启用"变体区分"来自动需找对应的本地依赖变体</span>
+    implementation <span class="token function">project</span><span class="token punctuation">(</span><span class="token string">':library'</span><span class="token punctuation">)</span>
+
+    <span class="token comment" spellcheck="true">//不过对于外部依赖仍然可以使用这种方式</span>
+    debugImplementation <span class="token string">'com.example.android:app-magic:12.3'</span>
+<span class="token punctuation">}</span>
+<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>注意的是，尽管这些手动指定依赖的API仍然还可以用，但是最好不要用。因为使用project() dsl语法提供的依赖 必须和 使用依赖者 在buildType和flavor 以及其他属性上匹配。举个栗子，比如让一个debug变体去使用一个release变体是不可能的。</p>
+<p>说说新的语法和之前的区别：<br>implementation对应之前的compile 但是有一点不同—-不会暴露内部的依赖，举个栗子，比如module A依赖module B ，同时module B使用了类库 X，并且是用的implementation语法依赖的X,那么即使module A依赖了module B，类库X对module A也是不可见的。这样的好处是可以加快编译速度，因为如果X发生变化仅仅需要 重新编译X和依赖X的 module B就可以了</p>
+<p>api 对应compile,和之前的compile是完全一样的，会暴露内部依赖</p>
+<p>compileOnly 对应 provided</p>
+<p>runtimeOnly 对应apk(好吧，之前都不知道有apk这个dsl)</p>
+]]></content>
+      
+        
+        <tags>
+            
+            <tag> Gradle </tag>
+            
+            <tag> AndroidStudio </tag>
+            
+            <tag> Gradle3.x </tag>
+            
+        </tags>
+        
+    </entry>
+    
+    <entry>
+      <title><![CDATA[Gradle的一些小知识(不定期更新)]]></title>
+      <url>/2018/01/05/Gradle%E7%9A%84%E4%B8%80%E4%BA%9B%E5%B0%8F%E7%9F%A5%E8%AF%86-%E4%B8%8D%E5%AE%9A%E6%9C%9F%E6%9B%B4%E6%96%B0/</url>
+      <content type="html"><![CDATA[<h3 id="资源分包"><a href="#资源分包" class="headerlink" title="资源分包"></a>资源分包</h3><p>一次不小心点进去sourceSet进去，发现可以定义资源路径的;自己按照main目录下的结构一样创建了一个debug的SourceSet(新建的其他名字的都不行，debug和main可以)，然后在module的gradle中加入如下配置就等于是有两个res目录，这样可以让资源分类更清晰</p>
+<pre class="line-numbers language-groovy"><code class="language-groovy">        sourceSets <span class="token punctuation">{</span>
+            debug <span class="token punctuation">{</span>
+                res<span class="token operator">.</span><span class="token function">srcDirs</span><span class="token punctuation">(</span><span class="token string">"src/debug/res_debug"</span><span class="token punctuation">,</span> <span class="token string">"src/debug/res"</span><span class="token punctuation">)</span>
+            <span class="token punctuation">}</span>
+
+        <span class="token punctuation">}</span>
+<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>记得sync一下<br><img src="https://github.com/HirayClay/draft/blob/master/GradleSourceSet.png?raw=true" alt=""><br>最后生成apk的时候两个sourceSet的东西会合并</p>
+]]></content>
+      
+        
+        <tags>
+            
+            <tag> Gradle </tag>
+            
+            <tag> Android </tag>
+            
+        </tags>
+        
+    </entry>
+    
+    <entry>
+      <title><![CDATA[Parcelable]]></title>
+      <url>/2018/01/05/Parcelable/</url>
+      <content type="html"><![CDATA[<p>这里并不是要仔细说一遍Parcelable，而是看了一些Parcelable的国内博客，发现都是说怎么用。怎么用官方文档就有例子，而是有个点，没有一篇博客说出来（也有可能我看的不仔细？）。<br>这个疑惑估计你也有过，在使用Parcelable 序列化和序列化的时候都是write<strong> read</strong>方法调用，但是发现如果有两个相同类型的值，比如有两个int要序列化，我们是不是要调用writeInt两次，然后反序列化的时候调用两次readInt，那么问题来了，反序列化的时候调用readInt怎么就知道是拿到的正确的值，而不会拿反了，毕竟两个int呢。<br>就这个不大不小的点，一直没看到，当然我也想过，write<strong> readInt</strong>操作的值的顺序必须一致，不然就会错<br>写了一小段代码跑了下，确实必须按照顺序来，因为底层就是个指针在挪动，挨个读取，比如取一个int的值，就会挪动4字节，所以顺序错了有时会拿到错的值，甚至拿不到正确的值（读到null直接crash）</p>
+<pre class="line-numbers language-java"><code class="language-java">    var name<span class="token operator">:</span> String <span class="token operator">=</span> <span class="token string">""</span>
+    var nickName<span class="token operator">:</span> String <span class="token operator">=</span> <span class="token string">""</span>
+    var id<span class="token operator">:</span> Int <span class="token operator">=</span> <span class="token number">0</span>
+
+    <span class="token function">constructor</span><span class="token punctuation">(</span>parcel<span class="token operator">:</span> Parcel<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        id <span class="token operator">=</span> parcel<span class="token punctuation">.</span><span class="token function">readInt</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+        nickName <span class="token operator">=</span> parcel<span class="token punctuation">.</span><span class="token function">readString</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+        name <span class="token operator">=</span> parcel<span class="token punctuation">.</span><span class="token function">readString</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+    <span class="token punctuation">}</span>
+
+    override fun <span class="token function">writeToParcel</span><span class="token punctuation">(</span>parcel<span class="token operator">:</span> Parcel<span class="token punctuation">,</span> flags<span class="token operator">:</span> Int<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        parcel<span class="token punctuation">.</span><span class="token function">writeString</span><span class="token punctuation">(</span>name<span class="token punctuation">)</span>
+        parcel<span class="token punctuation">.</span><span class="token function">writeString</span><span class="token punctuation">(</span>nickName<span class="token punctuation">)</span>
+        parcel<span class="token punctuation">.</span><span class="token function">writeInt</span><span class="token punctuation">(</span>id<span class="token punctuation">)</span>
+    <span class="token punctuation">}</span>
+<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>然后直接崩了<br><img src="https://raw.githubusercontent.com/HirayClay/draft/master/ParcelableCrash.png" alt=""></p>
+<p>这里有篇歪果仁写的<a href="https://www.sitepoint.com/transfer-data-between-activities-with-android-parcelable/" target="_blank" rel="external">博客</a>，很详细</p>
+<p>The End</p>
+]]></content>
+      
+        
+        <tags>
+            
+            <tag> Android </tag>
+            
+            <tag> Parcelable </tag>
+            
+        </tags>
+        
+    </entry>
+    
+    <entry>
+      <title><![CDATA[LinearLayoutManager源码阅读(滚动分析)]]></title>
+      <url>/2017/12/19/LinearLayoutManager%E6%BA%90%E7%A0%81%E9%98%85%E8%AF%BB%EF%BC%88%E6%BB%91%E5%8A%A8%EF%BC%89/</url>
+      <content type="html"><![CDATA[<p>实现自定义的通用的LayoutManager，但是卡住了，遂看下Android 官方的几种LayoutManager是如何优雅实现的，大致的以及一些细节都看懂了，但是还是没找到什么好办法解决自己的问题，不如趁着热度把自己的分析过程写下来，也给其他需要的Androider.其实真的要对RecyclerView有个全面的认识，其实LayoutManager、Adapter、动画以及测量流程等细节都是要清楚的，因为虽然说RV给人使用上非常灵活解耦，但是其实内部也是这几者的紧密配合才达到的效果，所以有一点不明白其他地方可能也就会很模糊看不下去。也不细分章节了，就按照滚动的流程来写。至于为什么从滚动开始分析，是因为看源码还是讲究切入点，从RecyclerView的滑动开始是最佳切入点，很直观，要是第一次直接就从onLayoutChildren看起，我觉得看不了几行就得放弃。当然这篇文章的内容很多没说清楚的其实都是onLayoutChildren的一些逻辑，所以都略过了，只关注滑动。</p>
+<p>由于自定的LayoutManager如果要(肯定要，不然还定义啥)支持滚动都必须至少重写以下两个方法中的一个，并且返回true，分别表示支持垂直滚动和水平滚动</p>
+<pre class="line-numbers language-java"><code class="language-java"> <span class="token keyword">public</span> <span class="token keyword">boolean</span> <span class="token function">canScrollHorizontally</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            <span class="token keyword">return</span> <span class="token boolean">true</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+ <span class="token keyword">public</span> <span class="token keyword">boolean</span> <span class="token function">canScrollVertically</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            <span class="token keyword">return</span> <span class="token boolean">true</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>在发生滚动的时候，会在以下两个方法回调滚动的距离dy/dx</p>
+<pre class="line-numbers language-java"><code class="language-java">    <span class="token keyword">public</span> <span class="token keyword">int</span> <span class="token function">scrollVerticallyBy</span><span class="token punctuation">(</span><span class="token keyword">int</span> dy<span class="token punctuation">,</span> Recycler recycler<span class="token punctuation">,</span> State state<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            <span class="token keyword">return</span> <span class="token number">0</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+    <span class="token keyword">public</span> <span class="token keyword">int</span> <span class="token function">scrollHorizontallyBy</span><span class="token punctuation">(</span><span class="token keyword">int</span> dx<span class="token punctuation">,</span> Recycler recycler<span class="token punctuation">,</span> State state<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            <span class="token keyword">return</span> <span class="token number">0</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>这里我们从LinearLayoutManager的垂直滚动分析起，进入scrollBy方法,</p>
+<pre class="line-numbers language-java"><code class="language-java">    <span class="token keyword">int</span> <span class="token function">scrollBy</span><span class="token punctuation">(</span><span class="token keyword">int</span> dy<span class="token punctuation">,</span> RecyclerView<span class="token punctuation">.</span>Recycler recycler<span class="token punctuation">,</span> RecyclerView<span class="token punctuation">.</span>State state<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token function">getChildCount</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">==</span> <span class="token number">0</span> <span class="token operator">||</span> dy <span class="token operator">==</span> <span class="token number">0</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            <span class="token keyword">return</span> <span class="token number">0</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token comment" spellcheck="true">//滚动发生时，是需要回收View的</span>
+        mLayoutState<span class="token punctuation">.</span>mRecycle <span class="token operator">=</span> <span class="token boolean">true</span><span class="token punctuation">;</span>
+        <span class="token function">ensureLayoutState</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment" spellcheck="true">//手指向上滑动时dy>0</span>
+        <span class="token keyword">final</span> <span class="token keyword">int</span> layoutDirection <span class="token operator">=</span> dy <span class="token operator">></span> <span class="token number">0</span> <span class="token operator">?</span> LayoutState<span class="token punctuation">.</span>LAYOUT_END <span class="token operator">:</span> LayoutState<span class="token punctuation">.</span>LAYOUT_START<span class="token punctuation">;</span>
+        <span class="token keyword">final</span> <span class="token keyword">int</span> absDy <span class="token operator">=</span> Math<span class="token punctuation">.</span><span class="token function">abs</span><span class="token punctuation">(</span>dy<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment" spellcheck="true">//更新LayoutState</span>
+        <span class="token function">updateLayoutState</span><span class="token punctuation">(</span>layoutDirection<span class="token punctuation">,</span> absDy<span class="token punctuation">,</span> <span class="token boolean">true</span><span class="token punctuation">,</span> state<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">final</span> <span class="token keyword">int</span> consumed <span class="token operator">=</span> mLayoutState<span class="token punctuation">.</span>mScrollingOffset
+                <span class="token operator">+</span> <span class="token function">fill</span><span class="token punctuation">(</span>recycler<span class="token punctuation">,</span> mLayoutState<span class="token punctuation">,</span> state<span class="token punctuation">,</span> <span class="token boolean">false</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>consumed <span class="token operator">&lt;</span> <span class="token number">0</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span>DEBUG<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                Log<span class="token punctuation">.</span><span class="token function">d</span><span class="token punctuation">(</span>TAG<span class="token punctuation">,</span> <span class="token string">"Don't have any more elements to scroll"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+            <span class="token keyword">return</span> <span class="token number">0</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token keyword">final</span> <span class="token keyword">int</span> scrolled <span class="token operator">=</span> absDy <span class="token operator">></span> consumed <span class="token operator">?</span> layoutDirection <span class="token operator">*</span> consumed <span class="token operator">:</span> dy<span class="token punctuation">;</span>
+        <span class="token comment" spellcheck="true">//layout view结束，所有View整体平移；这里需要注意的是LLM并非是从头到尾一个个layout view，而是先根据偏移把需要回收的view回收掉，会显示的view显示出来，最后进行整体的平移。想一想这样效率确实要高</span>
+        mOrientationHelper<span class="token punctuation">.</span><span class="token function">offsetChildren</span><span class="token punctuation">(</span><span class="token operator">-</span>scrolled<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>DEBUG<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            Log<span class="token punctuation">.</span><span class="token function">d</span><span class="token punctuation">(</span>TAG<span class="token punctuation">,</span> <span class="token string">"scroll req: "</span> <span class="token operator">+</span> dy <span class="token operator">+</span> <span class="token string">" scrolled: "</span> <span class="token operator">+</span> scrolled<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        mLayoutState<span class="token punctuation">.</span>mLastScrollDelta <span class="token operator">=</span> scrolled<span class="token punctuation">;</span>
+        <span class="token keyword">return</span> scrolled<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>写了部分注释，具体分析一下updateLayoutState方法<br>分析这个方法前，先看下LayoutState这个类，了解一下我们需要关注的几个重要参数的含义</p>
+<p>mRecycle 表示是否需要回收View,滑动情况下这个值是true，但是在有item 添加删除的情况是false，因为锚点什么的得靠view来确定，不能回收</p>
+<p>mOffset   layout View时候的起始坐标(垂直方向的LinearLayoutManager 表示y值)，e.g.比如发生滑动后，下一个item需要显示出来，那么mOffset的值就等于最后一个可见item的bottom值(不考虑margin，向上滑动)</p>
+<p>mAvailable 表示可用距离，在layout View的时候用到</p>
+<p>mCurrentPosition  表示获取View的起始索引，在layout View的时候循环取View的时候用到</p>
+<p>mItemDirection  获取item 数据的方向，是从前到后（值为1），还是从后往前（值为-1），本篇分析的是正序情况</p>
+<p>mExtra 在LayoutManager支持predictive动画的时候这个值很有用，具体的需要了解RV的动画机制才明白这个值怎么回事，简单的说就是即使一个item此时(当他即将进入RV可见范围时)对用户不可见，但是还是得把他layout出来，虽然已经超出了RV的边界用户看不到，这样做的目的是为了更好的动画体验（因为需要两次layout，一次pre-layout 一次post-layout来确定动画的起始和终止位置，不然就只能做最简单的fadeIn fadeOut。只有当item add remove发生时才有值，一般为0</p>
+<p>再回过来看updateLayoutState方法(并不喜欢贴太长串的代码。。。)</p>
+<pre class="line-numbers language-java"><code class="language-java">     <span class="token keyword">private</span> <span class="token keyword">void</span> <span class="token function">updateLayoutState</span><span class="token punctuation">(</span><span class="token keyword">int</span> layoutDirection<span class="token punctuation">,</span> <span class="token keyword">int</span> requiredSpace<span class="token punctuation">,</span>
+            <span class="token keyword">boolean</span> canUseExistingSpace<span class="token punctuation">,</span> RecyclerView<span class="token punctuation">.</span>State state<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token comment" spellcheck="true">// If parent provides a hint, don't measure unlimited.</span>
+        mLayoutState<span class="token punctuation">.</span>mInfinite <span class="token operator">=</span> <span class="token function">resolveIsInfinite</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        mLayoutState<span class="token punctuation">.</span>mExtra <span class="token operator">=</span> <span class="token function">getExtraLayoutSpace</span><span class="token punctuation">(</span>state<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        mLayoutState<span class="token punctuation">.</span>mLayoutDirection <span class="token operator">=</span> layoutDirection<span class="token punctuation">;</span>
+        <span class="token keyword">int</span> scrollingOffset<span class="token punctuation">;</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>layoutDirection <span class="token operator">==</span> LayoutState<span class="token punctuation">.</span>LAYOUT_END<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            mLayoutState<span class="token punctuation">.</span>mExtra <span class="token operator">+=</span> mOrientationHelper<span class="token punctuation">.</span><span class="token function">getEndPadding</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token comment" spellcheck="true">// get the first child in the direction we are going</span>
+            <span class="token keyword">final</span> View child <span class="token operator">=</span> <span class="token function">getChildClosestToEnd</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token comment" spellcheck="true">// the direction in which we are traversing children</span>
+            mLayoutState<span class="token punctuation">.</span>mItemDirection <span class="token operator">=</span> mShouldReverseLayout <span class="token operator">?</span> LayoutState<span class="token punctuation">.</span>ITEM_DIRECTION_HEAD
+                    <span class="token operator">:</span> LayoutState<span class="token punctuation">.</span>ITEM_DIRECTION_TAIL<span class="token punctuation">;</span>
+            mLayoutState<span class="token punctuation">.</span>mCurrentPosition <span class="token operator">=</span> <span class="token function">getPosition</span><span class="token punctuation">(</span>child<span class="token punctuation">)</span> <span class="token operator">+</span> mLayoutState<span class="token punctuation">.</span>mItemDirection<span class="token punctuation">;</span>
+            mLayoutState<span class="token punctuation">.</span>mOffset <span class="token operator">=</span> mOrientationHelper<span class="token punctuation">.</span><span class="token function">getDecoratedEnd</span><span class="token punctuation">(</span>child<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token comment" spellcheck="true">// calculate how much we can scroll without adding new children (independent of layout)</span>
+            scrollingOffset <span class="token operator">=</span> mOrientationHelper<span class="token punctuation">.</span><span class="token function">getDecoratedEnd</span><span class="token punctuation">(</span>child<span class="token punctuation">)</span>
+                    <span class="token operator">-</span> mOrientationHelper<span class="token punctuation">.</span><span class="token function">getEndAfterPadding</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+        <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token punctuation">{</span>
+            <span class="token keyword">final</span> View child <span class="token operator">=</span> <span class="token function">getChildClosestToStart</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            mLayoutState<span class="token punctuation">.</span>mExtra <span class="token operator">+=</span> mOrientationHelper<span class="token punctuation">.</span><span class="token function">getStartAfterPadding</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            mLayoutState<span class="token punctuation">.</span>mItemDirection <span class="token operator">=</span> mShouldReverseLayout <span class="token operator">?</span> LayoutState<span class="token punctuation">.</span>ITEM_DIRECTION_TAIL
+                    <span class="token operator">:</span> LayoutState<span class="token punctuation">.</span>ITEM_DIRECTION_HEAD<span class="token punctuation">;</span>
+            mLayoutState<span class="token punctuation">.</span>mCurrentPosition <span class="token operator">=</span> <span class="token function">getPosition</span><span class="token punctuation">(</span>child<span class="token punctuation">)</span> <span class="token operator">+</span> mLayoutState<span class="token punctuation">.</span>mItemDirection<span class="token punctuation">;</span>
+            mLayoutState<span class="token punctuation">.</span>mOffset <span class="token operator">=</span> mOrientationHelper<span class="token punctuation">.</span><span class="token function">getDecoratedStart</span><span class="token punctuation">(</span>child<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            scrollingOffset <span class="token operator">=</span> <span class="token operator">-</span>mOrientationHelper<span class="token punctuation">.</span><span class="token function">getDecoratedStart</span><span class="token punctuation">(</span>child<span class="token punctuation">)</span>
+                    <span class="token operator">+</span> mOrientationHelper<span class="token punctuation">.</span><span class="token function">getStartAfterPadding</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        mLayoutState<span class="token punctuation">.</span>mAvailable <span class="token operator">=</span> requiredSpace<span class="token punctuation">;</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>canUseExistingSpace<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            mLayoutState<span class="token punctuation">.</span>mAvailable <span class="token operator">-=</span> scrollingOffset<span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        mLayoutState<span class="token punctuation">.</span>mScrollingOffset <span class="token operator">=</span> scrollingOffset<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>前面几行就是简单的赋值更新状态，然后是根据layoutDirection的方向进行其他参数的计算，我们这里是分析的手指上滑，对应的layoutDireciton是LAYOUT_END，我们进入layoutDirection == LayoutState.LAYOUT_END成立的情况下去看：</p>
+<p> 1.通过getChildClosestToEnd方法拿到RV最接近End的child(如果是水平布局，那么end就是RV的right，垂直布局end就是RV的bottom)</p>
+<p> 2.根据mShouldReverseLayout变量给mItemDirection赋值，我们一般都不使用逆序布局，所以mItemDirection的值是ITEM_DIRECTION_HEAD，也就是说待会在fill方法内部取child来放的时候是正序，也就是从前往后依次取，反之亦然</p>
+<p> 3.根据刚才取到的child获取到其在adapter中的位置，加上mItemDirection后赋值给mCurrentPosition，这个好理解，mCurrentPosition表示的就是取child的开始索引，LayoutState里面有个next方法就是这么做的，可以看下代码</p>
+<pre class="line-numbers language-java"><code class="language-java">        View <span class="token function">next</span><span class="token punctuation">(</span>RecyclerView<span class="token punctuation">.</span>Recycler recycler<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span>mScrapList <span class="token operator">!=</span> null<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                <span class="token keyword">return</span> <span class="token function">nextViewFromScrapList</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+            <span class="token keyword">final</span> View view <span class="token operator">=</span> recycler<span class="token punctuation">.</span><span class="token function">getViewForPosition</span><span class="token punctuation">(</span>mCurrentPosition<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            mCurrentPosition <span class="token operator">+=</span> mItemDirection<span class="token punctuation">;</span>
+            <span class="token keyword">return</span> view<span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p> 4.给mOffset赋值，也就是下图最后一个item的bottom值，是后续依次放child的起始坐标<br> <img src="https://github.com/HirayClay/draft/blob/master/RV_LLM.png?raw=true" alt=""></p>
+<p> 5.至于scrollingOffset就是上面这张图里面最后一个item底部距离RV底部的距离，官方也有注释—-“不需要添加新的children的情况下滚动的最大距离”—–也就是说最后一个item刚好完全滚进来，但是又不会有新的item滚进来的意思</p>
+<p> 6最后给mAvailable赋值为requiredSpace，也就是此次滚动的距离,然后判断canUseExistingSpace为true就减去刚才的scrollingOffset；这里为什么要减去这个scrollingOffset呢<br>  ，其实就是把这个零头减掉方便计算而已，最后一句mScrollingOffset又把scrollingOffse<br>  t保存起来了。最后所有child都放置好之后，返回消耗的滑动距离时候，在scrollBy方法那里<br>  最后又把这个值加上去了，就这句：</p>
+<pre class="line-numbers language-java"><code class="language-java">     <span class="token keyword">final</span> <span class="token keyword">int</span> consumed <span class="token operator">=</span> mLayoutState<span class="token punctuation">.</span>mScrollingOffset
+                <span class="token operator">+</span> <span class="token function">fill</span><span class="token punctuation">(</span>recycler<span class="token punctuation">,</span> mLayoutState<span class="token punctuation">,</span> state<span class="token punctuation">,</span> <span class="token boolean">false</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
+<p>  好了，这个方法看完了，进去fill方法，没有贴全部的代码，还是一块一块看紧凑点</p>
+<pre class="line-numbers language-java"><code class="language-java">        <span class="token keyword">if</span> <span class="token punctuation">(</span>layoutState<span class="token punctuation">.</span>mScrollingOffset <span class="token operator">!=</span> LayoutState<span class="token punctuation">.</span>SCROLLING_OFFSET_NaN<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            <span class="token comment" spellcheck="true">// TODO ugly bug fix. should not happen</span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span>layoutState<span class="token punctuation">.</span>mAvailable <span class="token operator">&lt;</span> <span class="token number">0</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                layoutState<span class="token punctuation">.</span>mScrollingOffset <span class="token operator">+=</span> layoutState<span class="token punctuation">.</span>mAvailable<span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+            <span class="token function">recycleByLayoutState</span><span class="token punctuation">(</span>recycler<span class="token punctuation">,</span> layoutState<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>这句确实不太明白什么意思也不敢说我现在看明白了。外层这个if是为了避开首次初始化的情况，只有正常滑动的情况时候才会进来，但是滑动情况下 layoutState.mAvailable &lt; 0 这个条件只有在滑动距离过小不足以把最后一个item的底部完全滑进来的情况才满足，不过看官方的注释好像是有bug，可能就做了一个防御性的if判断，防止特殊情况发生把，就假设这个条件满足了，不做if里面的处理，好像也不会发生什么问题把，不过回头想一下mScrollingOffset这个字段的意思是“在不需要添加新的View时候能滑动的最大距离”，按照这么理解，当mAvailable&lt;0时候，说明滑动距离太小，没法把item底部全滑进来，最多也就只能滑动此次滑动的距离，所以这么处理之后mSrollingOffset就是此次滑动距离；所以这个TODO注释看的挺烦的，还以为是bug，让人很纠结是个什么bug-_-，最后recycleByLayoutState方法回收了一下此次滚动发生之后会越界不见的View</p>
+<pre class="line-numbers language-java"><code class="language-java">       <span class="token keyword">private</span> <span class="token keyword">void</span> <span class="token function">recycleByLayoutState</span><span class="token punctuation">(</span>RecyclerView<span class="token punctuation">.</span>Recycler recycler<span class="token punctuation">,</span> LayoutState layoutState<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token operator">!</span>layoutState<span class="token punctuation">.</span>mRecycle <span class="token operator">||</span> layoutState<span class="token punctuation">.</span>mInfinite<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            <span class="token keyword">return</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>layoutState<span class="token punctuation">.</span>mLayoutDirection <span class="token operator">==</span> LayoutState<span class="token punctuation">.</span>LAYOUT_START<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            <span class="token function">recycleViewsFromEnd</span><span class="token punctuation">(</span>recycler<span class="token punctuation">,</span> layoutState<span class="token punctuation">.</span>mScrollingOffset<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token punctuation">{</span>
+            <span class="token function">recycleViewsFromStart</span><span class="token punctuation">(</span>recycler<span class="token punctuation">,</span> layoutState<span class="token punctuation">.</span>mScrollingOffset<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>根据滑动方向选择是从后往前回收还是从前往后回收，我们考虑手指上滑，所以可能会有头部的View出界被滑出去，所以是调用的recycleViewsFromStart方法</p>
+<pre class="line-numbers language-java"><code class="language-java">  <span class="token keyword">private</span> <span class="token keyword">void</span> <span class="token function">recycleViewsFromStart</span><span class="token punctuation">(</span>RecyclerView<span class="token punctuation">.</span>Recycler recycler<span class="token punctuation">,</span> <span class="token keyword">int</span> dt<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>dt <span class="token operator">&lt;</span> <span class="token number">0</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span>DEBUG<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                Log<span class="token punctuation">.</span><span class="token function">d</span><span class="token punctuation">(</span>TAG<span class="token punctuation">,</span> <span class="token string">"Called recycle from start with a negative value. This might happen"</span>
+                        <span class="token operator">+</span> <span class="token string">" during layout changes but may be sign of a bug"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+            <span class="token keyword">return</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token comment" spellcheck="true">// ignore padding, ViewGroup may not clip children.</span>
+        <span class="token keyword">final</span> <span class="token keyword">int</span> limit <span class="token operator">=</span> dt<span class="token punctuation">;</span>
+        <span class="token keyword">final</span> <span class="token keyword">int</span> childCount <span class="token operator">=</span> <span class="token function">getChildCount</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>mShouldReverseLayout<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token keyword">int</span> i <span class="token operator">=</span> childCount <span class="token operator">-</span> <span class="token number">1</span><span class="token punctuation">;</span> i <span class="token operator">>=</span> <span class="token number">0</span><span class="token punctuation">;</span> i<span class="token operator">--</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                View child <span class="token operator">=</span> <span class="token function">getChildAt</span><span class="token punctuation">(</span>i<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                <span class="token keyword">if</span> <span class="token punctuation">(</span>mOrientationHelper<span class="token punctuation">.</span><span class="token function">getDecoratedEnd</span><span class="token punctuation">(</span>child<span class="token punctuation">)</span> <span class="token operator">></span> limit
+                        <span class="token operator">||</span> mOrientationHelper<span class="token punctuation">.</span><span class="token function">getTransformedEndWithDecoration</span><span class="token punctuation">(</span>child<span class="token punctuation">)</span> <span class="token operator">></span> limit<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                    <span class="token comment" spellcheck="true">// stop here</span>
+                    <span class="token function">recycleChildren</span><span class="token punctuation">(</span>recycler<span class="token punctuation">,</span> childCount <span class="token operator">-</span> <span class="token number">1</span><span class="token punctuation">,</span> i<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                    <span class="token keyword">return</span><span class="token punctuation">;</span>
+                <span class="token punctuation">}</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token punctuation">{</span>
+            <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token keyword">int</span> i <span class="token operator">=</span> <span class="token number">0</span><span class="token punctuation">;</span> i <span class="token operator">&lt;</span> childCount<span class="token punctuation">;</span> i<span class="token operator">++</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                View child <span class="token operator">=</span> <span class="token function">getChildAt</span><span class="token punctuation">(</span>i<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                <span class="token keyword">if</span> <span class="token punctuation">(</span>mOrientationHelper<span class="token punctuation">.</span><span class="token function">getDecoratedEnd</span><span class="token punctuation">(</span>child<span class="token punctuation">)</span> <span class="token operator">></span> limit
+                        <span class="token operator">||</span> mOrientationHelper<span class="token punctuation">.</span><span class="token function">getTransformedEndWithDecoration</span><span class="token punctuation">(</span>child<span class="token punctuation">)</span> <span class="token operator">></span> limit<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                    <span class="token comment" spellcheck="true">// stop here</span>
+                    <span class="token function">recycleChildren</span><span class="token punctuation">(</span>recycler<span class="token punctuation">,</span> <span class="token number">0</span><span class="token punctuation">,</span> i<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                    <span class="token keyword">return</span><span class="token punctuation">;</span>
+                <span class="token punctuation">}</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>看代码的第一句，如果dt&lt;0就直接返回结束了，这也解释了为什么前面的纠结为什么当mAvailable &lt; 0时候让mScrollingOffset加上mAvailable,就是为了让这里传入的dt是正值，也就是实际发生的滑动距离。由于不考虑逆序布局，直接看第二个for循环，其实这个循环要表达的意思是从头到尾遍历所有View直到找到一个滑动之后底部还没出界的View，那么在这个View之前的View全部要被回收掉。所谓回收掉就是把View节点从ViewHierarchy上删除掉了，但是被缓存起来了供重新绑定和重用。</p>
+<p>继续往fill方法下面看，进入while循环</p>
+<pre class="line-numbers language-java"><code class="language-java">      <span class="token keyword">while</span> <span class="token punctuation">(</span><span class="token punctuation">(</span>layoutState<span class="token punctuation">.</span>mInfinite <span class="token operator">||</span> remainingSpace <span class="token operator">></span> <span class="token number">0</span><span class="token punctuation">)</span> <span class="token operator">&amp;&amp;</span> layoutState<span class="token punctuation">.</span><span class="token function">hasMore</span><span class="token punctuation">(</span>state<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            layoutChunkResult<span class="token punctuation">.</span><span class="token function">resetInternal</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span>VERBOSE_TRACING<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                TraceCompat<span class="token punctuation">.</span><span class="token function">beginSection</span><span class="token punctuation">(</span><span class="token string">"LLM LayoutChunk"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+            <span class="token function">layoutChunk</span><span class="token punctuation">(</span>recycler<span class="token punctuation">,</span> state<span class="token punctuation">,</span> layoutState<span class="token punctuation">,</span> layoutChunkResult<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span>VERBOSE_TRACING<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                TraceCompat<span class="token punctuation">.</span><span class="token function">endSection</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span>layoutChunkResult<span class="token punctuation">.</span>mFinished<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                <span class="token keyword">break</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+            layoutState<span class="token punctuation">.</span>mOffset <span class="token operator">+=</span> layoutChunkResult<span class="token punctuation">.</span>mConsumed <span class="token operator">*</span> layoutState<span class="token punctuation">.</span>mLayoutDirection<span class="token punctuation">;</span>
+            <span class="token comment" spellcheck="true">/**
+             * Consume the available space if:
+             * * layoutChunk did not request to be ignored
+             * * OR we are laying out scrap children
+             * * OR we are not doing pre-layout
+             */</span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token operator">!</span>layoutChunkResult<span class="token punctuation">.</span>mIgnoreConsumed <span class="token operator">||</span> mLayoutState<span class="token punctuation">.</span>mScrapList <span class="token operator">!=</span> null
+                    <span class="token operator">||</span> <span class="token operator">!</span>state<span class="token punctuation">.</span><span class="token function">isPreLayout</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                layoutState<span class="token punctuation">.</span>mAvailable <span class="token operator">-=</span> layoutChunkResult<span class="token punctuation">.</span>mConsumed<span class="token punctuation">;</span>
+                <span class="token comment" spellcheck="true">// we keep a separate remaining space because mAvailable is important for recycling</span>
+                remainingSpace <span class="token operator">-=</span> layoutChunkResult<span class="token punctuation">.</span>mConsumed<span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+
+            <span class="token keyword">if</span> <span class="token punctuation">(</span>layoutState<span class="token punctuation">.</span>mScrollingOffset <span class="token operator">!=</span> LayoutState<span class="token punctuation">.</span>SCROLLING_OFFSET_NaN<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                layoutState<span class="token punctuation">.</span>mScrollingOffset <span class="token operator">+=</span> layoutChunkResult<span class="token punctuation">.</span>mConsumed<span class="token punctuation">;</span>
+                <span class="token keyword">if</span> <span class="token punctuation">(</span>layoutState<span class="token punctuation">.</span>mAvailable <span class="token operator">&lt;</span> <span class="token number">0</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                    layoutState<span class="token punctuation">.</span>mScrollingOffset <span class="token operator">+=</span> layoutState<span class="token punctuation">.</span>mAvailable<span class="token punctuation">;</span>
+                <span class="token punctuation">}</span>
+                <span class="token function">recycleByLayoutState</span><span class="token punctuation">(</span>recycler<span class="token punctuation">,</span> layoutState<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span>stopOnFocusable <span class="token operator">&amp;&amp;</span> layoutChunkResult<span class="token punctuation">.</span>mFocusable<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                <span class="token keyword">break</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span>
+<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>只要还有可用空间就依次取 View 并添加layout出来，之后更新mOffset和mAvailable,当然如果某个view是有焦点的，那么直接结束</p>
+<p>看LayoutChunk方法，顾名思义，就是layout小块的意思，就是把单个的itemView放置到合适的位置，并且传入了一个LayoutResult用于记录放置Item后的信息，就几个字段：<br> mConsumed 消耗的距离<br> mFinished 是否结束layout<br> mIgnoreConsumed 是否忽略此次消耗的距离，滑动情况下这个值一直都是false<br> mFocusable 当前item是否有焦点</p>
+<p> layoutChunk方法里面的逻辑，也没什么，就是测量，然后计算left top right bottom值。有一段逻辑比较重要，判断了mScrapList 是否为null，如果是null就调用了addDisappearingView方法，反之调用了addView;addView方法不用说就是简单的添加了View，但是addDisappearingView就是告诉RV，添加的这个View是马上就要移出屏幕的，注意是不可见了并不代表就是item被移除了也有可能是在屏幕之外。好了，我们再回头想象为什么是判断mScrapList为null就调用addDisappearingView。具体原因是mScapList其实绝大部分情况都是null，只有发生layout时候才不为空，而这个时候都是发生了item的增删改操作，导致有些View可能会超出RV的边界，也就是变成所谓的“hidden view”，不要被这个方法名迷惑，只是尝试加入hidden view，方法内部实际还是会根据flag判断之后决定是否需要hide 这个view。反过来mScrapList为null的时候就是对应滑动情况。</p>
+<p>layoutChunk 方法内容不多，另外还需要注意的是这句：</p>
+<pre class="line-numbers language-java"><code class="language-java">    <span class="token keyword">if</span> <span class="token punctuation">(</span>params<span class="token punctuation">.</span><span class="token function">isItemRemoved</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">||</span> params<span class="token punctuation">.</span><span class="token function">isItemChanged</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            result<span class="token punctuation">.</span>mIgnoreConsumed <span class="token operator">=</span> <span class="token boolean">true</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
+<p> 意思很简单，就是Item被删除了或者变化了，就忽略消耗，也就是不计入消耗。最开始我也觉得奇怪，后来知道动画之后明白这么做是有意义的，虽然这个Item被删除了，但是你不能立马就给不显示了还是添加进来，毕竟还有动画在这个Item要执行，所以就得等到这个Item的动画完了才删除。那么不计入消耗的好处就是，会多layout一个Item出来，就是在底部，屏幕外面，虽然不可见，如图：<br> <img src="https://github.com/HirayClay/draft/blob/master/rv_removed.png?raw=true" alt=""><br> item 2已经被移除了，并且item5会被加进来，但是在屏幕外我们看不到，等到item2动画结束item5就会滑进来。当然这个if判断在滑动情况下是不会进来的。</p>
+<p> 最后，所有的view添加完之后，其实view并没有在正确的位置，所以整体又进行平移，至此整个滑动流程都结束</p>
+<p>the end</p>
+]]></content>
+      
+        
+        <tags>
+            
+            <tag> Android </tag>
+            
+            <tag> RecyclerView LayoutManager LinearLayoutManager </tag>
+            
+        </tags>
+        
+    </entry>
+    
+    <entry>
+      <title><![CDATA[Hexo+github搭建个人博客]]></title>
+      <url>/2017/09/05/Hexo-github%E6%90%AD%E5%BB%BA%E4%B8%AA%E4%BA%BA%E5%8D%9A%E5%AE%A2/</url>
+      <content type="html"><![CDATA[<p>很早之前就有人用hexo和github提供的page服务做个人博客了,不过了解一下就没有怎么关注了，最近有时间，看了一下官方文档，花了两个多小时，搭建了一个简单的个人博客，除了最开始搭建配置繁琐一点，后面写完一篇文章一个命令就发布，体验非常棒！</p>
+<h3 id="新建主页仓库"><a href="#新建主页仓库" class="headerlink" title="新建主页仓库"></a>新建主页仓库</h3><p>登录自己的github账户，新建一个仓库，比如我的用户名是HirayClay，那么我就新建一个名为<br>HirayClay.github.io的仓库</p>
+<h3 id="hexo环境搭建"><a href="#hexo环境搭建" class="headerlink" title="hexo环境搭建"></a>hexo环境搭建</h3><p>首先要安装必要的软件，<a href="https://nodejs.org" target="_blank" rel="external">Node.js</a>和<a href="https://git-scm.com/" target="_blank" rel="external">Git</a>,安装完成之后安装hexo</p>
+<pre class="line-numbers language-shell"><code class="language-shell">   $ npm install -g hexo-cli
+<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<p>我安装的是 3.3.3版本<br>hexo安装好之后就可以用hexo命令创建一个站点了</p>
+<pre class="line-numbers language-shell"><code class="language-shell">    $ hexo init <folder_name>
+    $ cd <folder>
+    $ npm install
+<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
+<p>看一下创建的目录结构</p>
+<pre><code>    .
+    ├── _config.yml
+    ├── package.json
+    ├── scaffolds
+    ├── source
+    |   └── _posts
+    └── themes
+</code></pre><p>其中_config.yml是配置文件，一些全局的重要配置都在这里面；package.json文件中声明了版本信息和依赖信息，scaffolds，即脚手架的意思，我们创建post的时候就是用的这个文件下的模板，里面默认有三种模板：draft、page、post，当然你也可以创建自己的模板；source目录下有个子目录_posts，顾名思义就是放我们文章的地方；最后themes就是存放主题的地方，可以下载三方的主题放在里面</p>
+<p>我们需要重点关注一下_config.yml文件里面几个地方</p>
+<pre class="line-numbers language-yaml"><code class="language-yaml">    <span class="token key atrule">title</span><span class="token punctuation">:</span> Blog
+    <span class="token key atrule">subtitle</span><span class="token punctuation">:</span> hirayclay's blog
+    <span class="token key atrule">description</span><span class="token punctuation">:</span>
+    <span class="token key atrule">author</span><span class="token punctuation">:</span> hirayclay
+    <span class="token key atrule">language</span><span class="token punctuation">:</span> zh
+    <span class="token key atrule">timezone</span><span class="token punctuation">:</span> Asia/Shanghai
+<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>title：站点的标题，subtitle：站点子标题，description：站点描述 language:站点语言，这里配置的是中文，其他语言的参考这里<a href="https://en.wikipedia.org/wiki/List_of_ISO_639-1_codes" target="_blank" rel="external">&gt;&gt;</a>,timezone即时区，这里用的中国北京时区，其他时区参考<a href="https://en.wikipedia.org/wiki/List_of_tz_database_time_zones" target="_blank" rel="external">&gt;&gt;</a></p>
+<p>要注意一点的是，这里所有的配置“：”后面都需要有一个空格，不然最后解析生成时候会失败，这是YAML的语法</p>
+<pre class="line-numbers language-yaml"><code class="language-yaml">    <span class="token key atrule">new_post_name</span><span class="token punctuation">:</span> <span class="token punctuation">:</span>title
+    <span class="token key atrule">default_layout</span><span class="token punctuation">:</span> post
+<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
+<p>new_post_name 即生成的post的名称，有一下几个配置：<br>:title<br>:year<br>:month<br>:i_month<br>:day<br>:i_day<br>我这里直接用title命名生成的post文件</p>
+<p>比如执行一下命令</p>
+<pre class="line-numbers language-shell"><code class="language-shell">    hexo new post "MyNewPost"
+<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<p>就会在source/_posts目录下生成 MyNewPost.md文件</p>
+<p>再看下语法高亮配置，比较简单，常用到的是否禁用和代码行数</p>
+<pre class="line-numbers language-yaml"><code class="language-yaml">    <span class="token key atrule">highlight</span><span class="token punctuation">:</span>
+    <span class="token key atrule">enable</span><span class="token punctuation">:</span> <span class="token boolean important">false</span>
+    <span class="token key atrule">line_number</span><span class="token punctuation">:</span> <span class="token boolean important">true</span>
+    <span class="token key atrule">auto_detect</span><span class="token punctuation">:</span> <span class="token boolean important">false</span>
+    <span class="token key atrule">tab_replace</span><span class="token punctuation">:</span>
+<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>部署配置，第一步新建仓库的作用到了</p>
+<pre class="line-numbers language-yaml"><code class="language-yaml">  <span class="token key atrule">deploy</span><span class="token punctuation">:</span>
+  <span class="token key atrule">type</span><span class="token punctuation">:</span> git
+  <span class="token key atrule">repo</span><span class="token punctuation">:</span> git@github.com<span class="token punctuation">:</span>HirayClay/HirayClay.github.io.git
+  <span class="token key atrule">branch</span><span class="token punctuation">:</span> master
+<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span></span></code></pre>
+<p>因为我们用的git提交到远程仓库的，所以type = git,以及仓库地址和分支名，这里的repo就是之前新建的仓库地址</p>
+<p>配置说完了，基本可以开写了</p>
+<p>首先 用 hexo new post <your_post_name> 创建一篇博客，然后source/_posts目录找到对应的博客打开编辑即可,可以给博客加tag，比如本博客的tag</your_post_name></p>
+<pre class="line-numbers language-yaml"><code class="language-yaml">   <span class="token punctuation">---</span>
+    <span class="token key atrule">title</span><span class="token punctuation">:</span> Hexo+github搭建个人博客
+    <span class="token key atrule">date</span><span class="token punctuation">:</span> <span class="token datetime number">2017-09-05 14:04:10</span>
+    <span class="token key atrule">tags</span><span class="token punctuation">:</span>
+        <span class="token punctuation">-</span> hexo
+        <span class="token punctuation">-</span> 博客
+    <span class="token punctuation">---</span>
+<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>至此基本的都配置完成了，用以下命令生成静态资源</p>
+<pre class="line-numbers language-shell"><code class="language-shell">    hexo generate
+<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<p>也可以写成</p>
+<pre class="line-numbers language-shell"><code class="language-shell">    hexo g
+<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<p>然后可以本地起一个服务进行预览</p>
+<pre class="line-numbers language-shell"><code class="language-shell">    hexo server
+<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<p>浏览器输入<a href="http://localhost:4000" target="_blank" rel="external">http://localhost:4000</a> 进行查看</p>
+<p>用以下命令发布到git远程仓库</p>
+<pre class="line-numbers language-shell"><code class="language-shell">    hexo deploy
+<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<p>应该会弹出一个窗口让你你输入ssh-key的密码</p>
+<p>最后如果觉得默认主题不合适，可以去下载其他<a href="https://hexo.io/themes/" target="_blank" rel="external">主题</a>到 themes目录下，可以随意命名该目录下的主题文件夹，但是最后在_config.yml文件中配置主题时候一定要用文件夹的名字</p>
+<pre class="line-numbers language-yaml"><code class="language-yaml">    <span class="token key atrule">theme</span><span class="token punctuation">:</span> theme_folder_name
+<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<p>The End</p>
+]]></content>
+      
+        
+        <tags>
+            
+            <tag> hexo </tag>
+            
+            <tag> 博客 </tag>
+            
+        </tags>
+        
+    </entry>
+    
+    <entry>
+      <title><![CDATA[利用模板写Span]]></title>
+      <url>/2017/09/05/SpanTextView/</url>
+      <content type="html"><![CDATA[<p>在之前的项目中，PM特别喜欢把一些文字做颜色或者大小上的区分，所以经常会用到Span，没有什么好的封装想法，只能老老实实的用原始的api，显得非常的笨，但是又没有什么办法，没想到什么好的封装策略，只是觉得这样写真的好难看啊。但是一般需要做特殊处理的文字其实都是后台返回的某些字段，是有特别含义的，比如“距离审核还有6天结束”中的‘6’其实就是后台会单独返回给你的。我们App这边拼接好整句话然后显示出来。当时在做这样的项目的时候也找过类似的开源库，但是觉得总觉得哪里不对，也懒得用，还是用的原始的套路，先数一数‘6’在字符串中的起始结束下标，然后设置Span。直到最近为了深入了解gradle，去看了下groovy，看到“Template engines”的时候突然想起之前的Span，于是有了一个大胆的想法。</p>
+<h3 id="关于-Groovy的Template"><a href="#关于-Groovy的Template" class="headerlink" title="关于 Groovy的Template"></a>关于 Groovy的Template</h3><p>Groovy可以动态生成字符串，比如模板是这样的’${name} is ${age} years old! ‘<br>绑定关系是这样的：[name:”Alice”,age:”18”],那么生成的文字就是”Alice is 18 years old!”。你可能要问了，这和你说的Span有什么关系？？？当然有，前面我们说了，我们的需要设置Span的文字其实都是有含义的，我们用原始的api那样数出下标然后设置Span非常的无脑，根本没有体现出这个字段的含义，但是现在如果我们用groovy的方式，定义自己的模板那么”距离审核还有6天结束”的模板是不是就是”距离审核还有${day}天结束”，这样表达起来是不是更有内涵些，然后你又要问我，确实有内涵了，但这和Span又有什么关系呢？？好吧，也没什么关系，就是要有内涵一点，所以借用Groovy的思想重新封装对Span的处理。你可能还要问，不是已经有类似的库了吗，干嘛还要封装一个，比如Spanny。那好，我们看看Spanny怎么做的，</p>
+<pre class="line-numbers language-java"><code class="language-java">    Spanny spanny <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">Spanny</span><span class="token punctuation">(</span><span class="token string">"距离审核还有"</span><span class="token punctuation">)</span>
+                <span class="token punctuation">.</span><span class="token function">append</span><span class="token punctuation">(</span><span class="token string">"6"</span><span class="token punctuation">,</span> <span class="token keyword">new</span> <span class="token class-name">ForegroundColorSpan</span><span class="token punctuation">(</span>Color<span class="token punctuation">.</span>RED<span class="token punctuation">)</span><span class="token punctuation">)</span>
+                <span class="token punctuation">.</span><span class="token function">append</span><span class="token punctuation">(</span><span class="token string">"天结束！"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    textView<span class="token punctuation">.</span><span class="token function">setText</span><span class="token punctuation">(</span>spanny<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span></span></code></pre>
+<p>对比我们定义好一个模板 “距离审核还有${day}天结束”，比较一下就看出不同了。Spanny的做法是希望需要什么样的Span就自己拼一个，虽然配合链式调用挺舒服的，其实给人的感觉就是很分离，并不像一句完整的句子那么看起来实在，个人觉得还是Groovy这样的模板很合适，毕竟当需要处理Span的时候，结构都是死的，所以用模板定义好结构是没有问题的，特别是当要处理的文字比较多的时候，这样拼接我觉得不太好，用定义的模板一眼看过去就非常的清晰明了。</p>
+<h3 id="需要解决的问题"><a href="#需要解决的问题" class="headerlink" title="需要解决的问题"></a>需要解决的问题</h3><p>虽然引入了template的思想来动态生成字符串，同时又需要对key替换后的文字做对应的处理，那么要解决的问题有以下三个：<br>1 如何解析模板字符串<br>2 如何替换key并生成结果字符串<br>3 如何解决以上两个问题</p>
+<p>关于第一个问题，看了下groovy解析模板的代码，自己做了一下修改差不多就是抄过来的，只是加入了一些额外的逻辑)<br>最后解析模板的代码是这样的：</p>
+<pre class="line-numbers language-java"><code class="language-java">List<span class="token operator">&lt;</span>MarkInfo<span class="token operator">></span> <span class="token function">parseAndMark</span><span class="token punctuation">(</span>Reader reader<span class="token punctuation">,</span> Map<span class="token operator">&lt;</span>String<span class="token punctuation">,</span> String<span class="token operator">></span> binding<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token operator">!</span>reader<span class="token punctuation">.</span><span class="token function">markSupported</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+            reader <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">BufferedReader</span><span class="token punctuation">(</span>reader<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        List<span class="token operator">&lt;</span>MarkInfo<span class="token operator">></span> markers <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">ArrayList</span><span class="token operator">&lt;</span><span class="token operator">></span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        MarkInfo mark<span class="token punctuation">;</span>
+        StringWriter writer <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">StringWriter</span><span class="token punctuation">(</span><span class="token number">50</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">while</span> <span class="token punctuation">(</span><span class="token boolean">true</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            <span class="token keyword">int</span> c<span class="token punctuation">;</span>
+            <span class="token keyword">try</span> <span class="token punctuation">{</span>
+                <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token punctuation">(</span>c <span class="token operator">=</span> reader<span class="token punctuation">.</span><span class="token function">read</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token operator">!=</span> <span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                    <span class="token keyword">if</span> <span class="token punctuation">(</span>c <span class="token operator">==</span> <span class="token string">'$'</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                        reader<span class="token punctuation">.</span><span class="token function">mark</span><span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                        c <span class="token operator">=</span> reader<span class="token punctuation">.</span><span class="token function">read</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                        <span class="token keyword">if</span> <span class="token punctuation">(</span>c <span class="token operator">==</span> <span class="token string">'{'</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                            String key <span class="token operator">=</span> <span class="token function">findKey</span><span class="token punctuation">(</span>reader<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                            <span class="token comment" spellcheck="true">//only true for text</span>
+                            <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token operator">!</span>key<span class="token punctuation">.</span><span class="token function">isEmpty</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                                String value <span class="token operator">=</span> binding<span class="token punctuation">.</span><span class="token function">get</span><span class="token punctuation">(</span>key<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                                <span class="token comment" spellcheck="true">//for text</span>
+                                <span class="token keyword">if</span> <span class="token punctuation">(</span>value <span class="token operator">!=</span> null<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                                    <span class="token keyword">int</span> start <span class="token operator">=</span> writer<span class="token punctuation">.</span><span class="token function">getBuffer</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">length</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                                    <span class="token keyword">int</span> end <span class="token operator">=</span> start <span class="token operator">+</span> value<span class="token punctuation">.</span><span class="token function">length</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                                    markers<span class="token punctuation">.</span><span class="token function">add</span><span class="token punctuation">(</span><span class="token keyword">new</span> <span class="token class-name">MarkInfo</span><span class="token punctuation">(</span>key<span class="token punctuation">,</span> value<span class="token punctuation">,</span> start<span class="token punctuation">,</span> end<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                                    writer<span class="token punctuation">.</span><span class="token function">write</span><span class="token punctuation">(</span>value<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                                <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token punctuation">{</span><span class="token comment" spellcheck="true">//for image</span>
+
+                                    <span class="token keyword">int</span> start <span class="token operator">=</span> writer<span class="token punctuation">.</span><span class="token function">getBuffer</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">length</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                                    <span class="token keyword">int</span> end <span class="token operator">=</span> start <span class="token operator">+</span> key<span class="token punctuation">.</span><span class="token function">length</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                                    markers<span class="token punctuation">.</span><span class="token function">add</span><span class="token punctuation">(</span><span class="token keyword">new</span> <span class="token class-name">MarkInfo</span><span class="token punctuation">(</span>key<span class="token punctuation">,</span> value<span class="token punctuation">,</span> start<span class="token punctuation">,</span> end<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                                    writer<span class="token punctuation">.</span><span class="token function">write</span><span class="token punctuation">(</span>key<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                                <span class="token punctuation">}</span>
+                            <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token punctuation">{</span>
+                                writer<span class="token punctuation">.</span><span class="token function">write</span><span class="token punctuation">(</span><span class="token string">"${"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                                <span class="token comment" spellcheck="true">//key not found</span>
+                                writer<span class="token punctuation">.</span><span class="token function">write</span><span class="token punctuation">(</span>key<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                            <span class="token punctuation">}</span>
+
+                        <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token punctuation">{</span>
+                            writer<span class="token punctuation">.</span><span class="token function">write</span><span class="token punctuation">(</span><span class="token string">'$'</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                            reader<span class="token punctuation">.</span><span class="token function">reset</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                        <span class="token punctuation">}</span>
+                    <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token punctuation">{</span>
+                        writer<span class="token punctuation">.</span><span class="token function">write</span><span class="token punctuation">(</span>c<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                    <span class="token punctuation">}</span>
+                <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token keyword">break</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span> <span class="token keyword">catch</span> <span class="token punctuation">(</span><span class="token class-name">IOException</span> e<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                e<span class="token punctuation">.</span><span class="token function">printStackTrace</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token keyword">return</span> markers<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+
+    String <span class="token function">findKey</span><span class="token punctuation">(</span>Reader reader<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        StringWriter stringBuilder <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">StringWriter</span><span class="token punctuation">(</span><span class="token number">10</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">int</span> c<span class="token punctuation">;</span>
+        <span class="token keyword">try</span> <span class="token punctuation">{</span>
+            <span class="token keyword">while</span> <span class="token punctuation">(</span><span class="token punctuation">(</span>c <span class="token operator">=</span> reader<span class="token punctuation">.</span><span class="token function">read</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token operator">!=</span> <span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                <span class="token keyword">if</span> <span class="token punctuation">(</span>c <span class="token operator">==</span> <span class="token string">'}'</span><span class="token punctuation">)</span>
+                    <span class="token keyword">break</span><span class="token punctuation">;</span>
+                <span class="token keyword">else</span> stringBuilder<span class="token punctuation">.</span><span class="token function">write</span><span class="token punctuation">(</span>c<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span> <span class="token keyword">catch</span> <span class="token punctuation">(</span><span class="token class-name">IOException</span> e<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            e<span class="token punctuation">.</span><span class="token function">printStackTrace</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token keyword">return</span> stringBuilder<span class="token punctuation">.</span><span class="token function">toString</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>这个方法的作用就是记录模板中所有key的起始结束位置。比如原始模板是：”${name} is ${age} years old! “数据映射是[name:”Alice”,age:”18”],解析之后就变成”Alice is 18 years old! “。并且’Alice’ ‘18’两个数据在字符串中的位置被记录在了MarkrInfo中</p>
+<p>我们来简单分析一下代码，一个简单的while循环，每次读取一个字符，每当读到’$’字符时认为可能是key要出现了，所以先在此处标记一下紧接着读取下一个字符，如果读到下一个字符是’{‘则认为key出现了，调用findKey方法读取’{‘和’}’之间的key值，如果为空则认为没有key，仅仅是读到了一个普通的”${}”，并且写入writer保存起来，如果key不为空认为读取到有效的key，记录key对应的value在字符串中的位置等信息，并且将value写入writer保存起来；如果’$’后面读到的不是’}’则认为只是读到了一个单独的’$’字符，虚惊一场，写入writer保存起来，并且把reader 重置，回到刚才标记的地方，也就是’$’的位置；如果读取的是普通的字符，直接写入writer.另外要说的就是ImageSpan的处理，由于有些字符最后是要替换成图片的，所以在binding中是没有其对应value的，所以当读取的key在binding中如果没有value，就认为这个key是要被替换成图片的，所以直接用key代替value，直接把key写入writer保存起来。</p>
+<p>解析这一步完成以后我们其实得到了一个List<markerinfo>，记录了key被替换成value后的value在结果字符串中的位置信息，以及原始的key等信息。有了这些重要信息，就可以根据下标施加对应的Span了，以及一些点击事件的监听了。</markerinfo></p>
+<p>施加Span的时候需要考虑文字和ImageSpan的差别，绝大多数时候是对文字的处理，不过有一种是把文字替换成图像，所以这个key在bingding中对应的就是个null,所以在施加span的时候都会判断一下是否为空，为空则说明是个ImageSpan,就不会做除了ImageSpan之外的任何处理</p>
+]]></content>
+      
+        
+        <tags>
+            
+            <tag> SpannableString </tag>
+            
+            <tag> TextView </tag>
+            
+        </tags>
+        
+    </entry>
+    
+  
+  
+</search>
