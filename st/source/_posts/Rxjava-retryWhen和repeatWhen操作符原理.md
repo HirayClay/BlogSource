@@ -10,18 +10,18 @@ tags:
 
 ### retryWhen和repeatWhen真的不一样吗
 先看下retryWhen的方法：
-    ```java
+```java
       public final Observable<T> retryWhen(final Func1<Observable<Throwable>,Observable> notificationHandler) {
         return OnSubscribeRedo.<T>retry(this, InternalObservableUtils.createRetryDematerializer(notificationHandler));
     }
-    ```
-    再看repeatWhen:
-    ```java
+```
+再看repeatWhen:
+```java
      public final Observable<T> repeatWhen(final Func1<Observable< Void>, Observable> notificationHandler) {
         return OnSubscribeRedo.repeat(this, 
         InternalObservableUtils.createRepeatDematerializer(notificationHandler));
     }
-    ```
+```
  几乎可以认为是一样的，除了对传入的handler处理稍微不同以外。另外参数上有点小不一样，retryWhen的参数内的泛型是Observable<Throwable>,
  repeatWhen的参数泛型则是Observable<Void>。这和两者响应的事件不一样，retry是对错误响应，发生错误了该选择是否重试；repeat则是对完成事件响应，数据发射完之后是否重试，完成事件是没有数据的所以是Void。
 
@@ -34,7 +34,7 @@ tags:
  ```
  具体含义就是，这个操作符会返回一个Observable(记作o1),o1会发射和源observable一样的数据（源observable可能会抛出异常）。当源Observable 发射错误事件时，会将这个错误传递给一个Observable(记作o2),而这个o2会作为参数传给notificationHandler。因为notificationHandler 返回的也是一个Observable(o3),如果o3 后续发射了complete或者error事件（其实就是调用了onComplete或者onError），那么会导致child subscription 也调用onComplete或者onError,结束整个流程，不然的话（也就是调用了onNext），那么将会重新订阅源Observable——————也就是再次激活源Oservable。
 
- 翻译的有点啰嗦。简而言之就是，我用一个代理Subscriber去订阅源Obsevable，从源Observable获取数据，没有发生错误的情况下，就和一个普通正常的Observable的一样，数据发射完了就结束了。不同的是， 源头可能发生错误，抛出异常，针对这种情况，我们选择怎么处理。给我们的处理方式就是，我给你一个Observable<Throwable>,当源Observable发射错误事件的时候，下游想从源Observable重新尝试订阅（也就是retry的含义）。而repeatWhen则只是稍微不同，repeatWhen响应的是源Observable的complete事件，就是当数据发射完了，是否重新订阅，重复的从源Observable获取数据。
+ 翻译的有点啰嗦。简而言之就是，我用一个代理Subscriber去订阅源Obsevable，从源Observable获取数据，没有发生错误的情况下，就和一个普通正常的Observable的一样，数据发射完了就结束了。不同的是，头可能发生错误，抛出异常，针对这种情况，我们选择怎么处理。给我们的处理方式就是，我给你一个Observable<Throwable>,当源Observable发射错误事件的时候，下游想从源Observable重新尝试订阅（也就是retry的含义）。而repeatWhen则只是稍微不同，repeatWhen响应的是源Observable的complete事件，就是当数据发射完了，是否重新订阅，重复的从源Observable获取数据。
 
 ###  使用
 ```java
@@ -199,11 +199,13 @@ Notificaiton拦截判断处理一下。一共有三种情况（其实就是决�
 
 我们把这个terminal.lift之后得到的Observable记作 o1。之后这个o1会作为参数传递给我们的controlHandler
  。前面说过这个controlHandler不是我们自己定义的那个notificationHandler，而是经过包装之后的RetryNotificationDematerializer。所以controlHandler.call(o1)这句代码展开就是：
+
  ```java
     notificationHandler.call(o1.map(ERROR_EXTRACTOR))
  ```
  进一步展开：
- ```
+
+ ```java
     notificationHanlder.call(o1.map(new Func1<Notification<?>, Throwable> {
         @Override
         public Throwable call(Notification<?> t) {
@@ -212,7 +214,7 @@ Notificaiton拦截判断处理一下。一共有三种情况（其实就是决�
     }))
  ```
 
-所以我们定义的notificationHandler里的Observable<Throwable>就是这么来的。加上我们自己添加的逻辑之后返回一个名为restarts的Observable
+所以我们定义的notificationHandler里的Observable<Throwable>是这么来的。加上我们自己添加的逻辑之后返回一个名为restarts的Observable
 
 最后，schedule了一个匿名的任务Action0:
 ```java
@@ -237,9 +239,15 @@ Notificaiton拦截判断处理一下。一共有三种情况（其实就是决�
         });
 ```
 注意这个任务让restarts进行订阅（为了方便起见，我们把这个匿名的Subscriber记为s1），然后在收到next事件的时候，执行前面的subscribeToSource任务，也就是向源Observable发起订阅的任务。
+
 那么这里的bug出现了，该怎么触发subscribeToSource这个任务呢？？？？？？？ 我们可以从后往前推，要触发这个subscribeToSource必须上游
 调用onNext吐出事件来，而这里的上游就是restarts,也就是terminals terminals要吐出事件来，必须依赖源Observable吐出事件, 这里就形成了一个互相依赖的困境！！<!-- restarts是什么？是我们自己对传入的err那个Observable做变换以后返回的，所以如果我们做的变换逻辑里面如果发出了事件，那么才会导致这里 s1的onNext进行调用 -->
 termials本身既是Observable也是一个Observer,所以terminals.lift 的目的是对自己发出的事件进行拦截 ，但是自己一开始并没有发出事件，然后把这个lift之后的ob传给我们定义的notificationHandler，所以——————最开始的事件还是必须由我们发出来！！
 
 其实是child.setProducer那一行，会导致调用request(Long.MAX_VALUE)，导致subscribeToSource被调用了
+所以入口就是这句话，然后发生错误，会回调到我们自定义的错误处理逻辑那里，我们前面提到过，为什么不使用传入的err会导致无效，
+因为整个链式调用断开了，返回的restarts是我们自己的Observable，那么导致的结果就是，我们用自己的Observable订阅了那个匿名Subscriber，
+可能调用一次onNext，然后就结束了。虽然后面确实会调用work.schedule(subscribeToSource)那一行代码，但是由于child已经结束了，订阅关系没了，这个subscribeToSource是不会执行的。但是如果换成是对err进行变换返回的Observable就不一样了，在接收到源Observable 发来的error的时候，会往下传递，一直走到我们的对error处理的逻辑，如果我们的处理是返回了一个Observable.just("")之类的，那么下游必然会接收到，也就是在匿名Subscriber那里的onNext调用，导致重新订阅源Observable，不然的话调用onComplete或者onError结束整个流程。
 
+
+===写的太乱了==不定期修改此博文
