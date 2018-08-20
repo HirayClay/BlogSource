@@ -3,6 +3,757 @@
   
     
     <entry>
+      <title><![CDATA[MotionLayout]]></title>
+      <url>/2018/08/20/MotionLayout/</url>
+      <content type="html"><![CDATA[<h3 id="传统动画的问题"><a href="#传统动画的问题" class="headerlink" title="传统动画的问题"></a>传统动画的问题</h3><p>以前的动画————比如View动画和属性动画我们其实无法真正的很好的控制动画，因为动画的时间是给定的，而不是根据用户的操作去表现给定的动画。<br>简单来说，传统的动画一旦运行起来我们就无法控制，我们能做的只是何时开始，何时结束，或者何时取消，对于已经运行中的动画我们无法控制。那么有些情况我们就没法做的更好，比如用户在滑动列表时，其他控件如何响应用户的滑动操作并做出对应的动画————当然我们并不是做不到，而是不太优雅，如果能够配置并定义好这些东西，那么再好不过。MotionLayout做的就是这些。</p>
+<h3 id="MotionLayout实现折叠动画"><a href="#MotionLayout实现折叠动画" class="headerlink" title="MotionLayout实现折叠动画"></a>MotionLayout实现折叠动画</h3><p>以前为了实现一个不那么复杂的滑动折叠效果，需要CoordinatorLayout CollapsingToolBar的帮助才能做到。而且布局文件里面的内容显得有些过于冗长。下面使用MotionLayout实现下面这个效果</p>
+<p><img src="https://gitee.com/cjjmyj/StackLayoutManager/raw/master/static/hrreverse.gif" width="400px" height="250px"></p>
+<p>布局十分简单：</p>
+<pre class="line-numbers language-xml"><code class="language-xml"><span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>android.support.design.widget.CoordinatorLayout</span> <span class="token attr-name"><span class="token namespace">xmlns:</span>android</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>http://schemas.android.com/apk/res/android<span class="token punctuation">"</span></span>
+    <span class="token attr-name"><span class="token namespace">android:</span>id</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>@+id/content<span class="token punctuation">"</span></span>
+    <span class="token attr-name"><span class="token namespace">android:</span>layout_width</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>match_parent<span class="token punctuation">"</span></span>
+    <span class="token attr-name"><span class="token namespace">android:</span>layout_height</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>match_parent<span class="token punctuation">"</span></span>
+    <span class="token attr-name"><span class="token namespace">android:</span>fitsSystemWindows</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>false<span class="token punctuation">"</span></span>
+    <span class="token attr-name"><span class="token namespace">android:</span>background</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>@color/contentBackground<span class="token punctuation">"</span></span><span class="token punctuation">></span></span>
+
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>android.support.design.widget.AppBarLayout</span>
+        <span class="token attr-name"><span class="token namespace">android:</span>id</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>@+id/app_bar<span class="token punctuation">"</span></span>
+        <span class="token attr-name"><span class="token namespace">android:</span>layout_width</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>match_parent<span class="token punctuation">"</span></span>
+        <span class="token attr-name"><span class="token namespace">android:</span>layout_height</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>@dimen/app_bar_height<span class="token punctuation">"</span></span>
+        <span class="token attr-name"><span class="token namespace">android:</span>theme</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>@style/AppTheme.AppBarOverlay<span class="token punctuation">"</span></span><span class="token punctuation">></span></span>
+
+        <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>include</span> <span class="token attr-name">layout</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>@layout/motion_09_coordinatorlayout_header<span class="token punctuation">"</span></span><span class="token punctuation">/></span></span>
+
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>android.support.design.widget.AppBarLayout</span><span class="token punctuation">></span></span>
+
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>include</span> <span class="token attr-name">layout</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>@layout/content_scrolling<span class="token punctuation">"</span></span> <span class="token punctuation">/></span></span>
+
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>android.support.design.widget.CoordinatorLayout</span><span class="token punctuation">></span></span>
+`
+<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>motion_09_coordinatorlayout_header:</p>
+<pre class="line-numbers language-xml"><code class="language-xml"><span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>com.google.androidstudio.motionlayoutexample.utils.CollapsibleToolbar</span> <span class="token attr-name"><span class="token namespace">xmlns:</span>android</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>http://schemas.android.com/apk/res/android<span class="token punctuation">"</span></span>
+    <span class="token attr-name"><span class="token namespace">xmlns:</span>app</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>http://schemas.android.com/apk/res-auto<span class="token punctuation">"</span></span>
+    <span class="token attr-name"><span class="token namespace">android:</span>id</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>@+id/motionLayout<span class="token punctuation">"</span></span>
+    <span class="token attr-name"><span class="token namespace">app:</span>layoutDescription</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>@xml/scene_09<span class="token punctuation">"</span></span>
+    <span class="token attr-name"><span class="token namespace">android:</span>layout_width</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>match_parent<span class="token punctuation">"</span></span>
+    <span class="token attr-name"><span class="token namespace">android:</span>layout_height</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>match_parent<span class="token punctuation">"</span></span>
+    <span class="token attr-name"><span class="token namespace">android:</span>minHeight</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>50dp<span class="token punctuation">"</span></span>
+    <span class="token attr-name"><span class="token namespace">android:</span>fitsSystemWindows</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>false<span class="token punctuation">"</span></span>
+    <span class="token attr-name"><span class="token namespace">app:</span>layout_scrollFlags</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>scroll|enterAlways|snap|exitUntilCollapsed<span class="token punctuation">"</span></span><span class="token punctuation">></span></span>
+
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>ImageView</span>
+        <span class="token attr-name"><span class="token namespace">android:</span>id</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>@+id/background<span class="token punctuation">"</span></span>
+        <span class="token attr-name"><span class="token namespace">android:</span>layout_width</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>match_parent<span class="token punctuation">"</span></span>
+        <span class="token attr-name"><span class="token namespace">android:</span>layout_height</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>200dp<span class="token punctuation">"</span></span>
+        <span class="token attr-name"><span class="token namespace">android:</span>background</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>@color/colorAccent<span class="token punctuation">"</span></span>
+        <span class="token attr-name"><span class="token namespace">android:</span>scaleType</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>centerCrop<span class="token punctuation">"</span></span>
+        <span class="token attr-name"><span class="token namespace">android:</span>src</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>@drawable/monterey<span class="token punctuation">"</span></span><span class="token punctuation">/></span></span>
+
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>TextView</span>
+        <span class="token attr-name"><span class="token namespace">android:</span>id</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>@+id/label<span class="token punctuation">"</span></span>
+        <span class="token attr-name"><span class="token namespace">android:</span>layout_width</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>wrap_content<span class="token punctuation">"</span></span>
+        <span class="token attr-name"><span class="token namespace">android:</span>layout_height</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>wrap_content<span class="token punctuation">"</span></span>
+        <span class="token attr-name"><span class="token namespace">android:</span>transformPivotX</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>0dp<span class="token punctuation">"</span></span>
+        <span class="token attr-name"><span class="token namespace">android:</span>transformPivotY</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>0dp<span class="token punctuation">"</span></span>
+        <span class="token attr-name"><span class="token namespace">android:</span>text</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>Monterey<span class="token punctuation">"</span></span>
+        <span class="token attr-name"><span class="token namespace">android:</span>textColor</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>#FFF<span class="token punctuation">"</span></span>
+        <span class="token attr-name"><span class="token namespace">android:</span>textSize</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>32dp<span class="token punctuation">"</span></span> <span class="token punctuation">/></span></span>
+
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>com.google.androidstudio.motionlayoutexample.utils.CollapsibleToolbar</span><span class="token punctuation">></span></span>
+<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>没有任何的嵌套，只是简单利用了ConstraintLayout的特性把控件放到合适的位置。可能会奇怪，并没有看到任何与动画有关的东西，难道是用Java代码在控制吗？并不是，动画的入口实则在layoutDescription属性上，这个属性的值指向一个xml文件：</p>
+<pre class="line-numbers language-xml"><code class="language-xml">    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>MotionScene</span>
+    <span class="token attr-name"><span class="token namespace">xmlns:</span>android</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>http://schemas.android.com/apk/res/android<span class="token punctuation">"</span></span>
+    <span class="token attr-name"><span class="token namespace">xmlns:</span>motion</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>http://schemas.android.com/apk/res-auto<span class="token punctuation">"</span></span><span class="token punctuation">></span></span>
+
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>Transition</span>
+        <span class="token attr-name"><span class="token namespace">motion:</span>constraintSetStart</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>@+id/start<span class="token punctuation">"</span></span>
+        <span class="token attr-name"><span class="token namespace">motion:</span>constraintSetEnd</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>@+id/end<span class="token punctuation">"</span></span>
+        <span class="token attr-name"><span class="token namespace">motion:</span>duration</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>1000<span class="token punctuation">"</span></span>
+        <span class="token attr-name"><span class="token namespace">motion:</span>interpolator</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>linear<span class="token punctuation">"</span></span><span class="token punctuation">></span></span>
+        <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>OnSwipe</span>
+            <span class="token attr-name"><span class="token namespace">motion:</span>touchAnchorId</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>@+id/background<span class="token punctuation">"</span></span>
+            <span class="token attr-name"><span class="token namespace">motion:</span>touchAnchorSide</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>bottom<span class="token punctuation">"</span></span>
+            <span class="token attr-name"><span class="token namespace">motion:</span>dragDirection</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>dragUp<span class="token punctuation">"</span></span> <span class="token punctuation">/></span></span>
+
+        <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>ConstraintSet</span> <span class="token attr-name"><span class="token namespace">android:</span>id</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>@+id/end<span class="token punctuation">"</span></span><span class="token punctuation">></span></span>
+            <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>Constraint</span>
+                <span class="token attr-name"><span class="token namespace">android:</span>id</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>@id/background<span class="token punctuation">"</span></span>
+                <span class="token attr-name"><span class="token namespace">android:</span>layout_width</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>match_parent<span class="token punctuation">"</span></span>
+                <span class="token attr-name"><span class="token namespace">android:</span>layout_height</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>match_parent<span class="token punctuation">"</span></span>
+                <span class="token attr-name"><span class="token namespace">android:</span>alpha</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>0.2<span class="token punctuation">"</span></span>
+                <span class="token attr-name"><span class="token namespace">motion:</span>layout_constraintBottom_toBottomOf</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>parent<span class="token punctuation">"</span></span><span class="token punctuation">/></span></span>
+            <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>Constraint</span>
+                <span class="token attr-name"><span class="token namespace">android:</span>id</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>@id/label<span class="token punctuation">"</span></span>
+                <span class="token attr-name"><span class="token namespace">android:</span>layout_width</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>wrap_content<span class="token punctuation">"</span></span>
+                <span class="token attr-name"><span class="token namespace">android:</span>layout_height</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>wrap_content<span class="token punctuation">"</span></span>
+                <span class="token attr-name"><span class="token namespace">android:</span>layout_marginStart</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>8dp<span class="token punctuation">"</span></span>
+                <span class="token attr-name"><span class="token namespace">android:</span>layout_marginBottom</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>8dp<span class="token punctuation">"</span></span>
+                <span class="token attr-name"><span class="token namespace">android:</span>rotation</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>0.0<span class="token punctuation">"</span></span>
+                <span class="token attr-name"><span class="token namespace">motion:</span>layout_constraintBottom_toBottomOf</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>@+id/background<span class="token punctuation">"</span></span>
+                <span class="token attr-name"><span class="token namespace">motion:</span>layout_constraintStart_toStartOf</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>parent<span class="token punctuation">"</span></span> <span class="token punctuation">/></span></span>
+        <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>ConstraintSet</span><span class="token punctuation">></span></span>
+
+        <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>ConstraintSet</span> <span class="token attr-name"><span class="token namespace">android:</span>id</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>@+id/start<span class="token punctuation">"</span></span><span class="token punctuation">></span></span>
+            <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>Constraint</span>
+                <span class="token attr-name"><span class="token namespace">android:</span>id</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>@+id/background<span class="token punctuation">"</span></span>
+                <span class="token attr-name"><span class="token namespace">android:</span>layout_width</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>match_parent<span class="token punctuation">"</span></span>
+                <span class="token attr-name"><span class="token namespace">android:</span>layout_height</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>match_parent<span class="token punctuation">"</span></span>
+                <span class="token attr-name"><span class="token namespace">android:</span>alpha</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>1.0<span class="token punctuation">"</span></span>
+                <span class="token attr-name"><span class="token namespace">motion:</span>layout_constraintBottom_toBottomOf</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>parent<span class="token punctuation">"</span></span><span class="token punctuation">/></span></span>
+            <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>Constraint</span>
+                <span class="token attr-name"><span class="token namespace">android:</span>id</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>@+id/label<span class="token punctuation">"</span></span>
+                <span class="token attr-name"><span class="token namespace">android:</span>layout_width</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>wrap_content<span class="token punctuation">"</span></span>
+                <span class="token attr-name"><span class="token namespace">android:</span>layout_height</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>wrap_content<span class="token punctuation">"</span></span>
+                <span class="token attr-name"><span class="token namespace">android:</span>rotation</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>-90.0<span class="token punctuation">"</span></span>
+                <span class="token attr-name"><span class="token namespace">motion:</span>layout_constraintBottom_toBottomOf</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>@+id/background<span class="token punctuation">"</span></span>
+                <span class="token attr-name"><span class="token namespace">motion:</span>layout_constraintStart_toStartOf</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>parent<span class="token punctuation">"</span></span><span class="token punctuation">/></span></span>
+        <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>ConstraintSet</span><span class="token punctuation">></span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>Transition</span><span class="token punctuation">></span></span>
+
+<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>MotionScene</span><span class="token punctuation">></span></span>
+<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>代码其实不多，最外边是MotiongScene，包含了所有动画需要的元素。Transition是</p>
+]]></content>
+      
+        
+        <tags>
+            
+            <tag> MotionLayout </tag>
+            
+            <tag> 动画 </tag>
+            
+        </tags>
+        
+    </entry>
+    
+    <entry>
+      <title><![CDATA[ProducerArbiter]]></title>
+      <url>/2018/08/16/ProducerArbiter/</url>
+      <content type="html"><![CDATA[<h3 id="Producer并不是一层不变"><a href="#Producer并不是一层不变" class="headerlink" title="Producer并不是一层不变"></a>Producer并不是一层不变</h3><p>前面说过Subscriber可以通过setProducer设置Producer，而且这个方法也是支持并发调用的，意味着我们的Producer是可能不断变化的————换个说法————我们的数据源可能会改变。关于Producer的逻辑看这个<a href="/2018/08/15/RxJava中的-Producer/" title="RxJava中的 Producer">RxJava中的 Producer</a>。但是那篇文章没有提到的是，如果我们的Producer在中途改变了，会发生什么情况。举个例子(这个例子实际来自RxJava开发者的一篇进阶<a href="https://blog.piasy.com/AdvancedRxJava/2016/07/02/operator-concurrency-primitives-7/" target="_blank" rel="external">博文</a>)：</p>
+<p>给定两个Observable,希望观察第一个Observable，当一个Observable结束之后，观察第二个Observable，第二个Observable结束了，那么才会结束,自定义了一个TheObserve操作符</p>
+<pre class="line-numbers language-java"><code class="language-java">    <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">final</span> <span class="token keyword">class</span> <span class="token class-name">ThenObserve</span><span class="token operator">&lt;</span>T<span class="token operator">></span> <span class="token keyword">implements</span> <span class="token class-name">Observable<span class="token punctuation">.</span>Operator</span><span class="token operator">&lt;</span>T<span class="token punctuation">,</span> T<span class="token operator">></span> <span class="token punctuation">{</span>
+        <span class="token keyword">final</span> Observable<span class="token operator">&lt;</span><span class="token operator">?</span> <span class="token keyword">extends</span> <span class="token class-name">T</span><span class="token operator">></span> other<span class="token punctuation">;</span>
+        <span class="token keyword">public</span> <span class="token function">ThenObserve</span><span class="token punctuation">(</span>Observable<span class="token operator">&lt;</span><span class="token operator">?</span> <span class="token keyword">extends</span> <span class="token class-name">T</span><span class="token operator">></span> other<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            <span class="token keyword">this</span><span class="token punctuation">.</span>other <span class="token operator">=</span> other<span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token annotation punctuation">@Override</span>
+        <span class="token keyword">public</span> Subscriber<span class="token operator">&lt;</span><span class="token operator">?</span> <span class="token keyword">super</span> T<span class="token operator">></span> <span class="token function">call</span><span class="token punctuation">(</span>Subscriber<span class="token operator">&lt;</span><span class="token operator">?</span> <span class="token keyword">super</span> T<span class="token operator">></span> child<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            Subscriber<span class="token operator">&lt;</span>T<span class="token operator">></span> parent <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">Subscriber</span><span class="token operator">&lt;</span>T<span class="token operator">></span><span class="token punctuation">(</span>child<span class="token punctuation">,</span> <span class="token boolean">false</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                <span class="token annotation punctuation">@Override</span>
+                <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">onNext</span><span class="token punctuation">(</span>T t<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                    child<span class="token punctuation">.</span><span class="token function">onNext</span><span class="token punctuation">(</span>t<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                <span class="token punctuation">}</span>
+                <span class="token annotation punctuation">@Override</span>
+                <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">onError</span><span class="token punctuation">(</span>Throwable e<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                    child<span class="token punctuation">.</span><span class="token function">onError</span><span class="token punctuation">(</span>e<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                <span class="token punctuation">}</span>
+                <span class="token annotation punctuation">@Override</span>
+                <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">onCompleted</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                    other<span class="token punctuation">.</span><span class="token function">unsafeSubscribe</span><span class="token punctuation">(</span>child<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                <span class="token punctuation">}</span>
+            <span class="token punctuation">}</span><span class="token punctuation">;</span>
+            child<span class="token punctuation">.</span><span class="token function">add</span><span class="token punctuation">(</span>parent<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token keyword">return</span> parent<span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+
+    Observable<span class="token operator">&lt;</span>Integer<span class="token operator">></span> source <span class="token operator">=</span> Observable
+                <span class="token punctuation">.</span><span class="token function">range</span><span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">,</span> <span class="token number">10</span><span class="token punctuation">)</span>
+                <span class="token punctuation">.</span><span class="token function">lift</span><span class="token punctuation">(</span><span class="token keyword">new</span> <span class="token class-name">ThenObserve</span><span class="token operator">&lt;</span><span class="token operator">></span><span class="token punctuation">(</span>Observable<span class="token punctuation">.</span><span class="token function">range</span><span class="token punctuation">(</span><span class="token number">11</span><span class="token punctuation">,</span> <span class="token number">90</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    TestSubscriber<span class="token operator">&lt;</span>Integer<span class="token operator">></span> ts <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">TestSubscriber</span><span class="token operator">&lt;</span><span class="token operator">></span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    ts<span class="token punctuation">.</span><span class="token function">requestMore</span><span class="token punctuation">(</span><span class="token number">20</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    source<span class="token punctuation">.</span><span class="token function">subscribe</span><span class="token punctuation">(</span>ts<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    ts<span class="token punctuation">.</span><span class="token function">getOnNextEvents</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">forEach</span><span class="token punctuation">(</span>System<span class="token punctuation">.</span>out<span class="token operator">:</span><span class="token operator">:</span>println<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>结果输出了1到30一共30个数字，并不像预想的先输出1-10 然后输出剩下的11-20 一共20个数字。问题出在Subscriber上。</p>
+<p>我们知道Subscriber可以向上游请求数据，如果没有设置Producer，内部有个requested计数器会将这个请求先保存起来，待到调用了setProducer的时候会把请求传递到上游。<br>而问题在于这个计数器只负责累计计数，并不会在请求已经到达的时候，减去已经完成的请求。那么在这个例子导致的问题就是第一个range(1,10)发出了10个数后，紧接着数据源变成了range(11,90),此时这个range(11,90)依然得到这个 数值为20个requested ，所以依然发射了 20个数字，所以最后导致一共产生了30个数据。那么应对这种数据源发生变化的场景我们需要用到ProducerArbiter。</p>
+<p>？？emitLoop 实际使用underlying producer在发射数据？？ProducerArbiter实际是完善了Subscriber只能累加已经产生的请求，而不能减去已经生产的请求而导致同一个请求，在生产者变化的情况下，请求会被执行两次，而ProducerArbiter做了加法减法计数两项工作。</p>
+]]></content>
+      
+        
+    </entry>
+    
+    <entry>
+      <title><![CDATA[RxJava Scheduler一点理解]]></title>
+      <url>/2018/08/15/RxJava-Scheduler%E4%B8%80%E7%82%B9%E7%90%86%E8%A7%A3/</url>
+      <content type="html"><![CDATA[<h3 id="subscribeOn"><a href="#subscribeOn" class="headerlink" title="subscribeOn"></a>subscribeOn</h3><p>通过subscribeOn 和 ObserveOn 两个方法rxjava可以灵活的指定任务执行的线程和指定收到事件的线程<br>直接看源码：</p>
+<pre class="line-numbers language-java"><code class="language-java">        <span class="token keyword">public</span> <span class="token keyword">final</span> Observable<span class="token operator">&lt;</span>T<span class="token operator">></span> <span class="token function">subscribeOn</span><span class="token punctuation">(</span>Scheduler scheduler<span class="token punctuation">,</span> <span class="token keyword">boolean</span> requestOn<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token keyword">this</span> <span class="token keyword">instanceof</span> <span class="token class-name">ScalarSynchronousObservable</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            <span class="token keyword">return</span> <span class="token punctuation">(</span><span class="token punctuation">(</span>ScalarSynchronousObservable<span class="token operator">&lt;</span>T<span class="token operator">></span><span class="token punctuation">)</span><span class="token keyword">this</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">scalarScheduleOn</span><span class="token punctuation">(</span>scheduler<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token keyword">return</span> <span class="token function">unsafeCreate</span><span class="token punctuation">(</span><span class="token keyword">new</span> <span class="token class-name">OperatorSubscribeOn</span><span class="token operator">&lt;</span>T<span class="token operator">></span><span class="token punctuation">(</span><span class="token keyword">this</span><span class="token punctuation">,</span> scheduler<span class="token punctuation">,</span> requestOn<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>使用了lift操作，看一下OperatorSubscribeOn这个操作符,重点是call方法：</p>
+<pre class="line-numbers language-java"><code class="language-java">   <span class="token annotation punctuation">@Override</span>
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">call</span><span class="token punctuation">(</span><span class="token keyword">final</span> Subscriber<span class="token operator">&lt;</span><span class="token operator">?</span> <span class="token keyword">super</span> T<span class="token operator">></span> subscriber<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token keyword">final</span> Worker inner <span class="token operator">=</span> scheduler<span class="token punctuation">.</span><span class="token function">createWorker</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+        SubscribeOnSubscriber<span class="token operator">&lt;</span>T<span class="token operator">></span> parent <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">SubscribeOnSubscriber</span><span class="token operator">&lt;</span>T<span class="token operator">></span><span class="token punctuation">(</span>subscriber<span class="token punctuation">,</span> requestOn<span class="token punctuation">,</span> inner<span class="token punctuation">,</span> source<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        subscriber<span class="token punctuation">.</span><span class="token function">add</span><span class="token punctuation">(</span>parent<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        subscriber<span class="token punctuation">.</span><span class="token function">add</span><span class="token punctuation">(</span>inner<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+        inner<span class="token punctuation">.</span><span class="token function">schedule</span><span class="token punctuation">(</span>parent<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>这个SubscribeOnSubscriber类型的parent实际是个Action0,然后inner.schedule(parent)直接让这个任务在指定的线程执行了，<br>然后事件到来的时候，简单调用这个call方法参数传来的Subscriber 调用一下onNext onError onComplete就完了。嗯，其实也很简单，一下就懂了，就是把source Observable的订阅放到一个指定的Scheduler中执行，然后事件也会在所在的Scheduler中发出来。其实可以得出一个结论：无论subscribeOn调用多少次，调度都只会在第一次调用subscribeOn指定的线程中执行。比如一个Observable 调用了subscribeOn(Schedulers.io).subscribeOn(Schedulers.compution()),其实这样做的效果可以拆分看，第一次调用subscribeOn把调度指定在io线程，那么后面的调度就是想把  ‘把调度指定在io’ 的调度指定在computation线程，换个说法，我有一个操作是要指定调度在io线程 ，只不过我把这个操作放在了computation线程去执行而已，有种脱了什么放什么的多余+_+(实在找不出什么恰当的比喻了)。</p>
+<p>我们以一个小栗子来看一下整个流程：</p>
+<pre><code>
+ val observable = Observable.create(Observable.OnSubscribe<int> { subscriber ->
+            Log.i("source===>", Thread.currentThread().name)
+            for (i in 0..0) {
+                subscriber.onNext(i)
+            }
+
+            subscriber.onCompleted()
+        })
+ val map = observable
+                .observeOn(Schedulers.computation())
+                .subscribeOn(Schedulers.newThread())
+                .map(Func1<int, string=""> { integer ->
+                    Log.i("map===>", Thread.currentThread().name)
+                    integer!!.toString()
+                })
+
+
+ map.observeOn(Schedulers.newThread())
+                .subscribe(Action1<string> { s -> Log.i("onNext===>", Thread.currentThread().name) })
+</string></int,></int></code></pre>
+
+<p>首先创建一个简单的发射一个数字的Observable，然后调用map操作转换成string 然后打印出来。注意subscribeOn 和ObserveOn的位置，我们是先observeOn 然后subscribeOn<br>打印结果：</p>
+<pre>
+    <code>
+    source===>: RxNewThreadScheduler-2
+    map===>: RxComputationScheduler-1
+    onNext===>: RxNewThreadScheduler-1
+    </code>
+</pre>
+
+<p>可以看到最后的onNext 调用并没有像预想的那样 发生在observeOn指定的computation 线程中，而是subscribeOn指定的创建的新线程中。<br>其实结合前面的subscribeOn的源码分析可以知道，调用subscribeOn之后的所有操作其实都会在subscribeOn 指定的线程中，这也是为什么map 和subscribe 两个操作都发生在RxNewThreadScheduler的原因。</p>
+<h3 id="observeOn"><a href="#observeOn" class="headerlink" title="observeOn"></a>observeOn</h3><p>ObserveOn和SubscribeOn不太一样，subscribeOn方法是放在哪儿都可以调用多次也只有第一次调用的效果。ObserveOn也可以多次调用，但是每次都会生效，要理解清楚还得看代码，直接进入OperatorObserveOn操作符的call方法</p>
+<pre><code>
+       @Override
+    public Subscriber<? super T> call(Subscriber<? super T> child) {
+        if (scheduler instanceof ImmediateScheduler) {
+            // avoid overhead, execute directly
+            return child;
+        } else if (scheduler instanceof TrampolineScheduler) {
+            // avoid overhead, execute directly
+            return child;
+        } else {
+            ObserveOnSubscriber<t> parent = new ObserveOnSubscriber<t>(scheduler, child, delayError, bufferSize);
+            parent.init();
+            return parent;
+        }
+    }
+
+</t></t></code></pre>
+不同的是 observeOn 的call方法是有返回值的，对于很多call方法有返回值的操作符，其实都可以认作是代理模式。包装了下游的subscriber，生成新的subscriber,然后让这个新的subscriber订阅上游observable,自己内部先处理，然后转发给下游的subscriber,达到代理的目的。我们再看一下这个ObserveOnSubscriber:
+
+1)
+<pre><code>
+         @Override
+        public void onNext(final T t) {
+            if (isUnsubscribed() || finished) {
+                return;
+            }
+            if (!queue.offer(NotificationLite.next(t))) {
+                onError(new MissingBackpressureException());
+                return;
+            }
+            schedule();
+        }
+</code></pre>
+
+<p>当接收到上游发来的事件时，调用onNext,然后先存入队列，存入成功，则会执行schedule方法进行调度，schedule方法了解一下：</p>
+<p>2)</p>
+<p><pre><code><br>            protected void schedule() {<br>            if (counter.getAndIncrement() == 0) {<br>                recursiveScheduler.schedule(this);<br>            }<br>        }<br></code></pre><br>非常简单的一句，如果当前没有任务（发射事件）调度，那么开始，并且把计数器加一，这里实际是对多线程的考虑，同一时刻只能有一个线程进行调度 。结合上面的onNext方法一起看就是——————如果有任务，先放入队列，放不进去就调用onError，不然就调度，而调度的话又必须满足当前没有其他线程在调度。调度任务会执行ObserveOnSubscriber的call方法,这样就实现了线程切换。call方法内部就是让传进来的child subscriber接收上游的事件，到这里我们可以得出结论ObserveOn 其实只对ObserveOn调用之后的操作生效。举个例子(kotlin编写)：</p>
+<p><pre><code><br> val ob = Observable.create(Observable.OnSubscribe<int> { t -&gt;<br>            t.onNext(1)<br>            t.onCompleted()<br>        })<br> ob.observeOn(Schedulers.io())<br>                .map { it-&gt;it.toString() }<br>                .observeOn(Schedulers.computation())<br>                .map { it-&gt; it.toCharArray() }<br>                .subscribe {  }<br></int></code></pre><br>上游简单发射一个Int数字,第一次调用ObserveOn 那么对于这第一个ObserveOn的操作符而言call方法传入的subscriber是下游map 生成的MapSubscriber,所以第一个map的操作发生在io线程，当同理第二个map 也会发生在computation线程。其实到这里可以总结出来ObserveOn方法的作用其实就是将之后的操作调度ObserveOn指定的线程中执行。</p>
+<p>3)<br>call 方法实现：</p>
+<p><pre><code><br>     @Override<br>        public void call() {<br>            long missed = 1L;//能进入到call这个方法，说明进入前，说明只有一次调度（就是本次调度）<br>            long currentEmission = emitted;<br>            final Queue<object> q = this.queue;<br>            final Subscriber&lt;? super T&gt; localChild = this.child;<br>            for (;;) {<br>                long requestAmount = requested.get();//获取下游的请求数量</object></code></pre></p>
+<pre><code>            while (requestAmount != currentEmission) { //直到把下游的请求都发射完为止
+                boolean done = finished;
+                Object v = q.poll();
+                boolean empty = v == null;
+
+                if (checkTerminated(done, empty, localChild, q)) { //是否已经结束
+                    return;
+                }
+
+                if (empty) {
+                    break;
+                }
+
+                localChild.onNext(NotificationLite.&lt;T&gt;getValue(v));
+
+                currentEmission++;
+                if (currentEmission == limit) {
+                    requestAmount = BackpressureUtils.produced(requested, currentEmission);
+                    request(currentEmission);
+                    currentEmission = 0L;
+                }
+            }
+
+            if (requestAmount == currentEmission) {
+                if (checkTerminated(finished, q.isEmpty(), localChild, q)) {
+                    return;
+                }
+            }
+
+            emitted = currentEmission;
+            missed = counter.addAndGet(-missed);//如果不是0，其他线程可能也在请求，导致新的多个调度任务，那么还得继续处理，记录调度任务数量，进入下次循环，直到任务全部处理完为止
+            if (missed == 0L) {
+                break;
+            }
+        }
+    }
+</code></pre><p><br>大致逻辑梳理一下：</p>
+<ul>
+<li>首先声明了一个missed  = 1L记录需要调度的数量以及一个currentMission记录已经发射的事件数量；</li>
+<li>一个for循环嵌套了一个while循环：<ol>
+<li>while循环的作用就是发射事件，发射事件之前检查是否已经结束，结束的原因可能是已经结束了或者发生错误</li>
+<li>每发射一个事件就计数</li>
+</ol>
+</li>
+</ul>
+]]></content>
+      
+        
+        <tags>
+            
+            <tag> RxJava </tag>
+            
+            <tag> Scheduler </tag>
+            
+            <tag> 线程调度 </tag>
+            
+        </tags>
+        
+    </entry>
+    
+    <entry>
+      <title><![CDATA[RxJava中的 Producer]]></title>
+      <url>/2018/08/15/RxJava%E4%B8%AD%E7%9A%84-Producer/</url>
+      <content type="html"><![CDATA[<p>本文基于 rxjava 1.3.8</p>
+<h3 id="背压"><a href="#背压" class="headerlink" title="背压"></a>背压</h3><p>Producer本身是作为沟通上下游的一个接口，只有一个方法：</p>
+<pre class="line-numbers language-java"><code class="language-java"><span class="token keyword">void</span> <span class="token function">request</span><span class="token punctuation">(</span><span class="token keyword">long</span> n<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<p>如果传入的n是Long.MAX_VALUE，表明是放弃背压，上游会有多少就生产多少。比如range()操作符内部的RangeProducer，如果遇到n = Long.MAX_VALUE,直接用fastPath方法，一口气把事件全部发射出去，反之是请求多少生产多少。</p>
+<p>但是平时我们调用range操作符，好像都没有考虑过什么背压，都是这样：</p>
+<pre class="line-numbers language-java"><code class="language-java">            Observable<span class="token punctuation">.</span><span class="token function">range</span><span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">,</span> <span class="token number">2</span><span class="token punctuation">)</span>
+                <span class="token punctuation">.</span><span class="token function">subscribe</span><span class="token punctuation">(</span><span class="token keyword">new</span> <span class="token class-name">Subscriber</span><span class="token operator">&lt;</span>Integer<span class="token operator">></span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                    <span class="token annotation punctuation">@Override</span>
+                    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">onCompleted</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+
+                    <span class="token punctuation">}</span>
+
+                    <span class="token annotation punctuation">@Override</span>
+                    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">onError</span><span class="token punctuation">(</span>Throwable e<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+
+                    <span class="token punctuation">}</span>
+
+                    <span class="token annotation punctuation">@Override</span>
+                    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">onNext</span><span class="token punctuation">(</span>Integer integer<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                            System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span>integer<span class="token punctuation">)</span>
+                    <span class="token punctuation">}</span>
+                <span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>也同样是一口气把数据全部给我了，似乎也没有调用request(Long.MAX_VALUE)</p>
+<h3 id="Range操作符内部"><a href="#Range操作符内部" class="headerlink" title="Range操作符内部"></a>Range操作符内部</h3><p>进入到range操作符，实际内部只有这么一句：</p>
+<pre class="line-numbers language-java"><code class="language-java">    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">call</span><span class="token punctuation">(</span><span class="token keyword">final</span> Subscriber<span class="token operator">&lt;</span><span class="token operator">?</span> <span class="token keyword">super</span> Integer<span class="token operator">></span> childSubscriber<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        childSubscriber<span class="token punctuation">.</span><span class="token function">setProducer</span><span class="token punctuation">(</span><span class="token keyword">new</span> <span class="token class-name">RangeProducer</span><span class="token punctuation">(</span>childSubscriber<span class="token punctuation">,</span> startIndex<span class="token punctuation">,</span> endIndex<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
+<p>RangeProducer这个Producer实际上就是一个fastPath和slowPath，分别对应没有背压和有背压的情况</p>
+<p>那么实际childSubscriber是下游的subscriber，也就是我们调用subscriber的时候new 出来的那个,那么问题来了，到这里都没有什么问题，为何range操作符还是会一口气把数据全部发射出去呢？这里setProducer我们漏掉了。<br>看一下setProducer做了什么。setProducer方法是subscriber的方法，这里很好理解，下游的subscriber需要数据属于消费者，消费者需要通知生产者，所以给消费者一个方法设置合适（不同场景下有不同的生产者）的生产者。</p>
+<pre class="line-numbers language-java"><code class="language-java">        <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">setProducer</span><span class="token punctuation">(</span>Producer p<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token keyword">long</span> toRequest<span class="token punctuation">;</span>
+        <span class="token keyword">boolean</span> passToSubscriber <span class="token operator">=</span> <span class="token boolean">false</span><span class="token punctuation">;</span>
+        <span class="token keyword">synchronized</span> <span class="token punctuation">(</span><span class="token keyword">this</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            toRequest <span class="token operator">=</span> requested<span class="token punctuation">;</span>
+            producer <span class="token operator">=</span> p<span class="token punctuation">;</span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span>subscriber <span class="token operator">!=</span> null<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                <span class="token comment" spellcheck="true">// middle operator ... we pass through unless a request has been made</span>
+                <span class="token keyword">if</span> <span class="token punctuation">(</span>toRequest <span class="token operator">==</span> NOT_SET<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                    <span class="token comment" spellcheck="true">// we pass through to the next producer as nothing has been requested</span>
+                    passToSubscriber <span class="token operator">=</span> <span class="token boolean">true</span><span class="token punctuation">;</span>
+                <span class="token punctuation">}</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span>
+        <span class="token comment" spellcheck="true">// do after releasing lock</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>passToSubscriber<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            subscriber<span class="token punctuation">.</span><span class="token function">setProducer</span><span class="token punctuation">(</span>producer<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token punctuation">{</span>
+            <span class="token comment" spellcheck="true">// we execute the request with whatever has been requested (or Long.MAX_VALUE)</span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span>toRequest <span class="token operator">==</span> NOT_SET<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                producer<span class="token punctuation">.</span><span class="token function">request</span><span class="token punctuation">(</span>Long<span class="token punctuation">.</span>MAX_VALUE<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token punctuation">{</span>
+                producer<span class="token punctuation">.</span><span class="token function">request</span><span class="token punctuation">(</span>toRequest<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>官方的注释其实已经是对这段代码的最简洁的解释了：如果Subscriber是通过Subscriber(Subscriber)或者Subscriber(Subscriber, boolean)方法设置了subscriber，那么就会对这个subscriber调用setProducer，反之如果没有设置subscriber并且已经有请求到来，那么就会直接调用producer.request(n)，其中n是已经累积的请求。</p>
+<p>当然官方解释遗漏一个情况，那就是当没有设置subscriber，而且也没有请求到来的时候，那么就会调用producer.request(Long.MAX_VALUE),也就是让上游有多少就生产多少。</p>
+<p>当然为了更容易明白这个方法的作用，总结一下：如果Subscriber自身设置了内部Subcriber那么会把这个producer设置给这个内部Subscriber;不然就请求上游（request(n))开始生产积累的数据,没有累积请求那就一口气全部生产完。有些时候我们要深刻理解前面半句，因为setProducer可能会形成很长的调用链:)。</p>
+<p>回到最开始的具体的例子range(1,2).subscribe(subscriber),实际range操作内部那个childSubscriber 是我们new的那个subscriber（准确说是包装了之后的SafeSubscriber） 调用setProducer设置了RangeProducer。<br>由于我们new 的Subscriber是没有设置内置的subscriber的，那么最后实际会走到 “producer.request(Long.MAX_VALUE);”那句来，导致的结果就是RangeProducer 调用fastPath不考虑背压一口气全部生产完数据。</p>
+<h3 id="多个操作符的情况"><a href="#多个操作符的情况" class="headerlink" title="多个操作符的情况"></a>多个操作符的情况</h3><p>这里我们有一个自定义的操作符，目的是过滤掉奇数，只要偶数：</p>
+<pre class="line-numbers language-java"><code class="language-java">EvenFilter <span class="token keyword">implements</span> <span class="token class-name">Observable<span class="token punctuation">.</span>Operator</span><span class="token operator">&lt;</span>Integer<span class="token punctuation">,</span> Integer<span class="token operator">></span> <span class="token punctuation">{</span>
+        <span class="token keyword">public</span> Subscriber<span class="token operator">&lt;</span><span class="token operator">?</span> <span class="token keyword">super</span> Integer<span class="token operator">></span> <span class="token function">call</span><span class="token punctuation">(</span><span class="token keyword">final</span> Subscriber<span class="token operator">&lt;</span><span class="token operator">?</span> <span class="token keyword">super</span> Integer<span class="token operator">></span> child<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+
+            <span class="token keyword">return</span> <span class="token keyword">new</span> <span class="token class-name">Subscriber</span><span class="token operator">&lt;</span>Integer<span class="token operator">></span><span class="token punctuation">(</span>child<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+
+                <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">onNext</span><span class="token punctuation">(</span>Integer t<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                    <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token punctuation">(</span>t <span class="token operator">&amp;</span> <span class="token number">1</span><span class="token punctuation">)</span> <span class="token operator">==</span> <span class="token number">0</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                        child<span class="token punctuation">.</span><span class="token function">onNext</span><span class="token punctuation">(</span>t<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                    <span class="token punctuation">}</span>
+                <span class="token punctuation">}</span>
+
+
+                <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">onError</span><span class="token punctuation">(</span>Throwable e<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                    child<span class="token punctuation">.</span><span class="token function">onError</span><span class="token punctuation">(</span>e<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                <span class="token punctuation">}</span>
+
+
+                <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">onCompleted</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                    child<span class="token punctuation">.</span><span class="token function">onCompleted</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                <span class="token punctuation">}</span>
+            <span class="token punctuation">}</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>操作符本身很简单，在onNext那里简单过滤了一下，看上去很完美。我们再写个例子：</p>
+<pre class="line-numbers language-java"><code class="language-java">     Observable<span class="token punctuation">.</span><span class="token function">range</span><span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">,</span> <span class="token number">2</span><span class="token punctuation">)</span>
+                <span class="token punctuation">.</span><span class="token function">lift</span><span class="token punctuation">(</span><span class="token keyword">new</span> <span class="token class-name">EvenFilter</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+                <span class="token punctuation">.</span><span class="token function">subscribe</span><span class="token punctuation">(</span><span class="token keyword">new</span> <span class="token class-name">Subscriber</span><span class="token operator">&lt;</span>Integer<span class="token operator">></span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                    <span class="token annotation punctuation">@Override</span>
+                    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">onCompleted</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+
+                    <span class="token punctuation">}</span>
+
+                    <span class="token annotation punctuation">@Override</span>
+                    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">onError</span><span class="token punctuation">(</span>Throwable e<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+
+                    <span class="token punctuation">}</span>
+
+                    <span class="token annotation punctuation">@Override</span>
+                    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">onNext</span><span class="token punctuation">(</span>Integer integer<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                        System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span>integer<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                    <span class="token punctuation">}</span>
+                <span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>逻辑也很简单，最后打印出了 2，符合预期。我们再加上一个操作符take()</p>
+<pre class="line-numbers language-java"><code class="language-java">     Observable<span class="token punctuation">.</span><span class="token function">range</span><span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">,</span> <span class="token number">2</span><span class="token punctuation">)</span>
+                <span class="token punctuation">.</span><span class="token function">lift</span><span class="token punctuation">(</span><span class="token keyword">new</span> <span class="token class-name">EvenFilter</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+                <span class="token punctuation">.</span><span class="token function">take</span><span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">subscribe</span><span class="token punctuation">(</span><span class="token keyword">new</span> <span class="token class-name">Action1</span><span class="token operator">&lt;</span>Integer<span class="token operator">></span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                    <span class="token annotation punctuation">@Override</span>
+                    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">call</span><span class="token punctuation">(</span>Integer integer<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                        System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span>integer<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                    <span class="token punctuation">}</span>
+                <span class="token punctuation">}</span><span class="token punctuation">)</span>
+<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>然后就出问题了，什么都没有打印。有点反常，因为加上了take(1),逻辑上是没有改变的，应该会输出一样的结果。 一直到lift(new EvenFilter())操作都是可以正常往下游发射数据的，那么为什么只是加入了take会变得奇怪导致没有数据打印。很明显问题出在take操作符上。</p>
+<p>分析，必须给他分析————range操作符 childSubscriber.setProducer那句实际上childSubscriber是我们下游EventFilter call方法返回的Subscriber，由于EvenFilter 返回的这个Subscriber设置了child这个Subscriber，所以实际上还会调用这个child的setProducer<br>把RangeProuducer设置给这个child。而这个child实际又是下游take操作符内部返回的Subscriber ，take操作符返回的这个Subscriber的setProducer方法是这样的：</p>
+<pre class="line-numbers language-java"><code class="language-java">     <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">setProducer</span><span class="token punctuation">(</span><span class="token keyword">final</span> Producer producer<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                child<span class="token punctuation">.</span><span class="token function">setProducer</span><span class="token punctuation">(</span><span class="token keyword">new</span> <span class="token class-name">Producer</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+
+                    <span class="token comment" spellcheck="true">// keeps track of requests up to maximum of `limit`</span>
+                    <span class="token keyword">final</span> AtomicLong requested <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">AtomicLong</span><span class="token punctuation">(</span><span class="token number">0</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+                    <span class="token annotation punctuation">@Override</span>
+                    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">request</span><span class="token punctuation">(</span><span class="token keyword">long</span> n<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                        <span class="token keyword">if</span> <span class="token punctuation">(</span>n <span class="token operator">></span> <span class="token number">0</span> <span class="token operator">&amp;&amp;</span> <span class="token operator">!</span>completed<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                            <span class="token comment" spellcheck="true">// because requests may happen concurrently use a CAS loop to</span>
+                            <span class="token comment" spellcheck="true">// ensure we only request as much as needed, no more no less</span>
+                            <span class="token keyword">while</span> <span class="token punctuation">(</span><span class="token boolean">true</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                                <span class="token keyword">long</span> r <span class="token operator">=</span> requested<span class="token punctuation">.</span><span class="token function">get</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                                <span class="token keyword">long</span> c <span class="token operator">=</span> Math<span class="token punctuation">.</span><span class="token function">min</span><span class="token punctuation">(</span>n<span class="token punctuation">,</span> limit <span class="token operator">-</span> r<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                                <span class="token keyword">if</span> <span class="token punctuation">(</span>c <span class="token operator">==</span> <span class="token number">0</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                                    <span class="token keyword">break</span><span class="token punctuation">;</span>
+                                <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token keyword">if</span> <span class="token punctuation">(</span>requested<span class="token punctuation">.</span><span class="token function">compareAndSet</span><span class="token punctuation">(</span>r<span class="token punctuation">,</span> r <span class="token operator">+</span> c<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                                    producer<span class="token punctuation">.</span><span class="token function">request</span><span class="token punctuation">(</span>c<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                                    <span class="token keyword">break</span><span class="token punctuation">;</span>
+                                <span class="token punctuation">}</span>
+                            <span class="token punctuation">}</span>
+                        <span class="token punctuation">}</span>
+                    <span class="token punctuation">}</span>
+                <span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>这里实际上是调用了下游的child Subscriber(就是我们最后new的Subscriber)setProducer，根据前面的总结，最后会调用这里这个匿名Producer的request方法，并且n = Long.MAX_VALUE,最后会走到producer.request(c)这句，而且c = limit,啊哈！！！！，因为我们是take(1) 所以limit = 1，上游的RangeProducer 生产一个数据之后就没了，没了！导致2不会被发射出来！</p>
+<p>做一整个问题就出在take操作符这里，因为take认为自己只要一个数据，所以只向上游请求了一个数据，这其实非常符合take的逻辑，然而它的上游，可以认为此时take的上游是我们的EvenFilter，EvenFilter自身数据来自range，而不是对range发来的数据做缓存，然后根据下游的请求来发射偶数2。所以这里与其说是take的错误，不如说是我们的Operator实现不够完美。那么我们这里其实有三种解决办法，一种是简单的修改EvenFilter</p>
+<ul>
+<li><p>request(1)</p>
+<pre class="line-numbers language-java"><code class="language-java">  <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">onNext</span><span class="token punctuation">(</span>Integer t<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                  <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token punctuation">(</span>t <span class="token operator">&amp;</span> <span class="token number">1</span><span class="token punctuation">)</span> <span class="token operator">==</span> <span class="token number">0</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                      child<span class="token punctuation">.</span><span class="token function">onNext</span><span class="token punctuation">(</span>t<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                  <span class="token punctuation">}</span><span class="token keyword">else</span> <span class="token function">request</span><span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">)</span>
+              <span class="token punctuation">}</span>
+<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>这样达到的效果是，如果符合要求，发往下游，不然请求下一个数据，这样所有的数据都会被发射出来</p>
+</li>
+<li><p>使用filter操作符<br>或者是使用rxjava提供的操作符，因为我们的EvenFilter实在有点多次一举，只是简单的过滤偶数，可以使用filter操作符：</p>
+<pre class="line-numbers language-java"><code class="language-java">  Observable<span class="token punctuation">.</span><span class="token function">range</span><span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">,</span> <span class="token number">2</span><span class="token punctuation">)</span>
+              <span class="token punctuation">.</span><span class="token function">filter</span><span class="token punctuation">(</span><span class="token keyword">new</span> <span class="token class-name">Func1</span><span class="token operator">&lt;</span>Integer<span class="token punctuation">,</span> Boolean<span class="token operator">></span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                  <span class="token annotation punctuation">@Override</span>
+                  <span class="token keyword">public</span> Boolean <span class="token function">call</span><span class="token punctuation">(</span>Integer integer<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                      <span class="token keyword">return</span> <span class="token punctuation">(</span>integer <span class="token operator">&amp;</span> <span class="token number">1</span><span class="token punctuation">)</span> <span class="token operator">==</span> <span class="token number">0</span><span class="token punctuation">;</span>
+                  <span class="token punctuation">}</span>
+              <span class="token punctuation">}</span><span class="token punctuation">)</span>
+              <span class="token punctuation">.</span><span class="token function">take</span><span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">)</span>
+<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+</li>
+<li>使用其余的构造方法返回Subscriber<br>由于我们的EvenFilter返回的Subscriber使用的是Subscriber(subscriber)构造方法，所以使得 会调用child.setProducer，这里我们使用空的构造方法：</li>
+</ul>
+<pre class="line-numbers language-java"><code class="language-java"> <span class="token keyword">return</span> <span class="token keyword">new</span> <span class="token class-name">Subscriber</span><span class="token operator">&lt;</span>Integer<span class="token operator">></span><span class="token punctuation">(</span><span class="token comment" spellcheck="true">/*child*/</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+
+                <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">onNext</span><span class="token punctuation">(</span>Integer t<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                    System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">"inner: "</span> <span class="token operator">+</span> t<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                    <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token punctuation">(</span>t <span class="token operator">&amp;</span> <span class="token number">1</span><span class="token punctuation">)</span> <span class="token operator">==</span> <span class="token number">0</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                        child<span class="token punctuation">.</span><span class="token function">onNext</span><span class="token punctuation">(</span>t<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                    <span class="token punctuation">}</span>
+                <span class="token punctuation">}</span>
+
+
+                <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">onError</span><span class="token punctuation">(</span>Throwable e<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                    child<span class="token punctuation">.</span><span class="token function">onError</span><span class="token punctuation">(</span>e<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                <span class="token punctuation">}</span>
+
+
+                <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">onCompleted</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                    child<span class="token punctuation">.</span><span class="token function">onCompleted</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                <span class="token punctuation">}</span>
+            <span class="token punctuation">}</span><span class="token punctuation">;</span>
+<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>为什么这样可以呢，因为这样就不会调用child的setProducer,而是返回的这个Subscriber的setProducer，根据前面总结的，由于这个Subscriber没有内置的Subscriber,最后会导致调用RangeProducer的 request(Long.MAX_VALUE),一口气生产全部的数据</p>
+<p>其实这个例子暗含一个教训，我们在实现自己的操作符的时候尽量不要去使用Subscriber(subscriber)这个构造方法返回Subscriber给上游，因为导致的问题是我们操作符自己被跨越了，下游和上游单独在联系，跨越了操作符自己，导致有些问题不能按照上游到下游一条连贯的线去思考，容易出现一些反常识的bug。</p>
+]]></content>
+      
+        
+        <tags>
+            
+            <tag> RxJava </tag>
+            
+            <tag> Producer </tag>
+            
+            <tag> 背压 </tag>
+            
+        </tags>
+        
+    </entry>
+    
+    <entry>
+      <title><![CDATA[Rxjava retryWhen和repeatWhen操作符原理]]></title>
+      <url>/2018/08/08/Rxjava-retryWhen%E5%92%8CrepeatWhen%E6%93%8D%E4%BD%9C%E7%AC%A6%E5%8E%9F%E7%90%86/</url>
+      <content type="html"><![CDATA[<h3 id="契机"><a href="#契机" class="headerlink" title="契机"></a>契机</h3><p>因为最近使用了mvvm，不再用mvp,并且大量使用RxJava 简化一些场景下的操作。以至发现了一个操作符retryWhen，搜了一些资料，几乎都是 一位叫DanLew的外国人写的一篇文章或者其译文。原文在这<a href="https://blog.danlew.net/2016/01/25/rxjavas-repeatwhen-and-retrywhen-explained/" target="_blank" rel="external"> &gt;&gt; </a>,思路清晰，知道了怎么用，一些关键的注意点，但就是没有分析具体原理和流程是怎样(但是看他提到的一些词，应该是搞明白了内部原理的)。痛定思痛————当然也是觉得这个操作符非常有意思，所以仔细研究一番。（说实话，我也是最近才觉得RxJava有些源码真的值得好好翻一翻）。本文基于rxjava 1.3.8。</p>
+<h3 id="retryWhen和repeatWhen真的不一样吗"><a href="#retryWhen和repeatWhen真的不一样吗" class="headerlink" title="retryWhen和repeatWhen真的不一样吗"></a>retryWhen和repeatWhen真的不一样吗</h3><p>先看下retryWhen的方法：</p>
+<pre class="line-numbers language-java"><code class="language-java">      <span class="token keyword">public</span> <span class="token keyword">final</span> Observable<span class="token operator">&lt;</span>T<span class="token operator">></span> <span class="token function">retryWhen</span><span class="token punctuation">(</span><span class="token keyword">final</span> Func1<span class="token operator">&lt;</span>Observable<span class="token operator">&lt;</span>Throwable<span class="token operator">></span><span class="token punctuation">,</span>Observable<span class="token operator">></span> notificationHandler<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token keyword">return</span> OnSubscribeRedo<span class="token punctuation">.</span>&lt;T<span class="token operator">></span><span class="token function">retry</span><span class="token punctuation">(</span><span class="token keyword">this</span><span class="token punctuation">,</span> InternalObservableUtils<span class="token punctuation">.</span><span class="token function">createRetryDematerializer</span><span class="token punctuation">(</span>notificationHandler<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
+<p>再看repeatWhen:</p>
+<pre class="line-numbers language-java"><code class="language-java">     <span class="token keyword">public</span> <span class="token keyword">final</span> Observable<span class="token operator">&lt;</span>T<span class="token operator">></span> <span class="token function">repeatWhen</span><span class="token punctuation">(</span><span class="token keyword">final</span> Func1<span class="token operator">&lt;</span>Observable<span class="token operator">&lt;</span> Void<span class="token operator">></span><span class="token punctuation">,</span> Observable<span class="token operator">></span> notificationHandler<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token keyword">return</span> OnSubscribeRedo<span class="token punctuation">.</span><span class="token function">repeat</span><span class="token punctuation">(</span><span class="token keyword">this</span><span class="token punctuation">,</span> 
+        InternalObservableUtils<span class="token punctuation">.</span><span class="token function">createRepeatDematerializer</span><span class="token punctuation">(</span>notificationHandler<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span></span></code></pre>
+<p> 几乎可以认为是一样的，除了对传入的handler处理稍微不同以外。另外参数上有点小不一样，retryWhen的参数内的泛型是Observable<throwable>,<br> repeatWhen的参数泛型则是Observable<void>。这和两者响应的事件不一样，retry是对错误响应，发生错误了该选择是否重试；repeat则是对完成事件响应，数据发射完之后是否重试，完成事件是没有数据的所以是Void。</void></throwable></p>
+<p>不过我看到这个方法最大的两个疑惑是：为什么不是Func1<throwable,boolean>类型的参数，根据给的异常返回true false决定是否重试不是很合理吗？？然后马上反应过来，返回Observable会更灵活，如果重试的逻辑很复杂，单纯根据一个bool 的true or false来决定是否重试，是满足不了一些场景下的需要的。</throwable,boolean></p>
+<p> retryWhen方法上有一段注释：</p>
+<pre class="line-numbers language-html"><code class="language-html">    Returns an Observable that emits the same values as the source observable with the exception of an {@code onError}. An {@code onError} notification from the source will result in the emission of a{@link Throwable} item to the Observable provided as an argument to the {@code notificationHandler}
+    function. If that Observable calls {@code onComplete} or {@code onError} then {@code retry} will call {@code onCompleted} or {@code onError} on the child subscription. Otherwise, this Observable will resubscribe to the source Observable.
+<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
+<p> 具体含义就是，这个操作符会返回一个Observable(记作o1),o1会发射和源observable一样的数据（源observable可能会抛出异常）。当源Observable 发射错误事件时，会将这个错误传递给一个Observable(记作o2),而这个o2会作为参数传给notificationHandler。因为notificationHandler 返回的也是一个Observable(o3),如果o3 后续发射了complete或者error事件（其实就是调用了onComplete或者onError），那么会导致child subscription 也调用onComplete或者onError,结束整个流程，不然的话（也就是调用了onNext），那么将会重新订阅源Observable——————也就是再次激活源Oservable。</p>
+<p> 翻译的有点啰嗦。简而言之就是，我用一个代理Subscriber去订阅源Obsevable，从源Observable获取数据，没有发生错误的情况下，就和一个普通正常的Observable的一样，数据发射完了就结束了。不同的是，头可能发生错误，抛出异常，针对这种情况，我们选择怎么处理。给我们的处理方式就是，我给你一个Observable<throwable>,当源Observable发射错误事件的时候，下游想从源Observable重新尝试订阅（也就是retry的含义）。而repeatWhen则只是稍微不同，repeatWhen响应的是源Observable的complete事件，就是当数据发射完了，是否重新订阅，重复的从源Observable获取数据。</throwable></p>
+<h3 id="使用"><a href="#使用" class="headerlink" title="使用"></a>使用</h3><pre class="line-numbers language-java"><code class="language-java">
+           retryCount <span class="token operator">=</span> <span class="token number">0</span>
+            Observable<span class="token punctuation">.</span><span class="token function">create</span><span class="token punctuation">(</span><span class="token keyword">new</span> <span class="token class-name">Observable<span class="token punctuation">.</span>OnSubscribe</span><span class="token operator">&lt;</span>Integer<span class="token operator">></span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">call</span><span class="token punctuation">(</span>Subscriber<span class="token operator">&lt;</span><span class="token operator">?</span> <span class="token keyword">super</span> Integer<span class="token operator">></span> subscriber<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                subscriber<span class="token punctuation">.</span><span class="token function">onNext</span><span class="token punctuation">(</span><span class="token number">1</span> <span class="token operator">/</span> <span class="token number">0</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                subscriber<span class="token punctuation">.</span><span class="token function">onCompleted</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">retryWhen</span><span class="token punctuation">(</span><span class="token keyword">new</span> <span class="token class-name">Func1</span><span class="token operator">&lt;</span>Observable<span class="token operator">&lt;</span><span class="token operator">?</span> <span class="token keyword">extends</span> <span class="token class-name">Throwable</span><span class="token operator">></span><span class="token punctuation">,</span> Observable<span class="token operator">&lt;</span><span class="token operator">?</span><span class="token operator">>></span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            <span class="token keyword">public</span> Observable<span class="token operator">&lt;</span><span class="token operator">?</span><span class="token operator">></span> <span class="token function">call</span><span class="token punctuation">(</span>Observable<span class="token operator">&lt;</span><span class="token operator">?</span> <span class="token keyword">extends</span> <span class="token class-name">Throwable</span><span class="token operator">></span> err<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                <span class="token keyword">return</span> err
+                        <span class="token punctuation">.</span><span class="token function">flatMap</span><span class="token punctuation">(</span><span class="token keyword">new</span> <span class="token class-name">Func1</span><span class="token operator">&lt;</span>Throwable<span class="token punctuation">,</span> Observable<span class="token operator">&lt;</span><span class="token operator">?</span><span class="token operator">>></span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                            <span class="token keyword">public</span> Observable<span class="token operator">&lt;</span><span class="token operator">?</span><span class="token operator">></span> <span class="token function">call</span><span class="token punctuation">(</span>Throwable throwable<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                                System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span>throwable<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                                <span class="token keyword">if</span> <span class="token punctuation">(</span>throwable <span class="token keyword">instanceof</span> <span class="token class-name">ArithmeticException</span> <span class="token operator">&amp;&amp;</span> retryCount <span class="token operator">&lt;</span> <span class="token number">3</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                                    System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">"retry ++"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                                    retryCount<span class="token operator">++</span><span class="token punctuation">;</span>
+                                    <span class="token keyword">return</span> Observable<span class="token punctuation">.</span><span class="token function">just</span><span class="token punctuation">(</span><span class="token string">""</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                                <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token punctuation">{</span>
+                                    System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">"no retry"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                                    <span class="token keyword">return</span> Observable<span class="token punctuation">.</span><span class="token function">empty</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                                <span class="token punctuation">}</span>
+                            <span class="token punctuation">}</span>
+                        <span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span><span class="token punctuation">)</span>
+<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>创建了一个必然抛出算术异常的Observable。重试的逻辑是超过三次就放弃重试。这里是直接Observable.just(“”)触发的重试，以及Observable.empty()结束整个流程</p>
+<p>这样写是没问题的，但是既然是返回Observable，那么我直接 这样：</p>
+<pre class="line-numbers language-java"><code class="language-java">    <span class="token function">retryWhen</span><span class="token punctuation">(</span><span class="token keyword">new</span> <span class="token class-name">Func1</span><span class="token operator">&lt;</span>Observable<span class="token operator">&lt;</span><span class="token operator">?</span> <span class="token keyword">extends</span> <span class="token class-name">Throwable</span><span class="token operator">></span><span class="token punctuation">,</span> Observable<span class="token operator">&lt;</span><span class="token operator">?</span><span class="token operator">>></span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+
+            <span class="token keyword">public</span> Observable<span class="token operator">&lt;</span><span class="token operator">?</span><span class="token operator">></span> <span class="token function">call</span><span class="token punctuation">(</span>Observable<span class="token operator">&lt;</span><span class="token operator">?</span> <span class="token keyword">extends</span> <span class="token class-name">Throwable</span><span class="token operator">></span> err<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+
+                                <span class="token keyword">if</span> <span class="token punctuation">(</span>throwable <span class="token keyword">instanceof</span> <span class="token class-name">ArithmeticException</span> <span class="token operator">&amp;&amp;</span> retryCount <span class="token operator">&lt;</span> <span class="token number">3</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                                    System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">"retry ++"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                                    retryCount<span class="token operator">++</span><span class="token punctuation">;</span>
+                                    <span class="token keyword">return</span> Observable<span class="token punctuation">.</span><span class="token function">just</span><span class="token punctuation">(</span><span class="token string">""</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                                <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token punctuation">{</span>
+                                    System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">"no retry"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                                    <span class="token keyword">return</span> Observable<span class="token punctuation">.</span><span class="token function">empty</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                                <span class="token punctuation">}</span>
+            <span class="token punctuation">}</span>
+
+        <span class="token punctuation">}</span><span class="token punctuation">)</span>
+<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>当然是不可以的，这样的话是返回一个和err无关的Observable，Observable.just(“”) 和Observable.empty()把事件发射完毕后，整个流程也就结束了，我们的订阅者也会取消订阅，不再接收消息。所以根本就是没有发挥这个操作符的效果。那么为什么我不使用参数err 这个Observable就会无效？</p>
+<h3 id="源码分析"><a href="#源码分析" class="headerlink" title="源码分析"></a>源码分析</h3><p>为了搞清楚为什么我们不使用传入的err这个Observable，就会导致retryWhen操作符失效，还是从方法本身入手</p>
+<p>retryWhen方法实际返回的是这个</p>
+<pre class="line-numbers language-java"><code class="language-java">  OnSubscribeRedo<span class="token punctuation">.</span>&lt;T<span class="token operator">></span><span class="token function">retry</span><span class="token punctuation">(</span><span class="token keyword">this</span><span class="token punctuation">,</span> InternalObservableUtils<span class="token punctuation">.</span><span class="token function">createRetryDematerializer</span><span class="token punctuation">(</span>notificationHandler<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<p> InternalObservableUtils.createRetryDematerializer(notificationHandler) 这句代码的实际返回的是<br> 一个 RetryNotificationDematerializer 作用是把Observable<notification>转换成Observable<throwable> ，然后传给我们自己定义的notificationHandler作为参数 然后返回一个新的Observable</throwable></notification></p>
+<p>==========go on 2108.8.10(今天又看了下，又有新的发现，之前的分析漏了点东西，不过也更加发觉 1.x版本的一些东西确实写的复杂了，结构不清晰)</p>
+<p>继续看内部逻辑（省略一些过于细节的细节[不然语言又是罗哩罗嗦]，需要对源码比较熟悉，最好先看一遍）：</p>
+<pre><code>```java
+</code></pre><p>   final Subject<notification<?>, Notification&lt;?&gt;&gt; terminals = BehaviorSubject.<notification<?>&gt;create().toSerialized();<br>   final Subscriber<notification<?>&gt; dummySubscriber = Subscribers.empty();<br>        // subscribe immediately so the last emission will be replayed to the next<br>        // subscriber (which is the one we care about)<br>   terminals.subscribe(dummySubscriber);</notification<?></notification<?></notification<?></p>
+<pre><code>```
+</code></pre><p>被 这三句话坑了很久，还让我看了BehaviorSubject的源码很久，发现这几句就是废话，有没有都行。看他的注释，意思是为了后面我们关心的subscriber能够获取到最近的那个事件，先订阅再说。（实际上最近的那个事件根本不存在）</p>
+<pre class="line-numbers language-java"><code class="language-java"><span class="token keyword">final</span> Action0 subscribeToSource <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">Action0</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            <span class="token annotation punctuation">@Override</span>
+            <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">call</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                Subscriber<span class="token operator">&lt;</span>T<span class="token operator">></span> terminalDelegatingSubscriber <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">Subscriber</span><span class="token operator">&lt;</span>T<span class="token operator">></span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                    <span class="token keyword">boolean</span> done<span class="token punctuation">;</span>
+
+                    <span class="token annotation punctuation">@Override</span>
+                    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">onCompleted</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                        <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token operator">!</span>done<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                            done <span class="token operator">=</span> <span class="token boolean">true</span><span class="token punctuation">;</span>
+                            <span class="token function">unsubscribe</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                            terminals<span class="token punctuation">.</span><span class="token function">onNext</span><span class="token punctuation">(</span>Notification<span class="token punctuation">.</span><span class="token function">createOnCompleted</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                        <span class="token punctuation">}</span>
+                    <span class="token punctuation">}</span>
+
+                    <span class="token annotation punctuation">@Override</span>
+                    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">onError</span><span class="token punctuation">(</span>Throwable e<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                        <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token operator">!</span>done<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                            done <span class="token operator">=</span> <span class="token boolean">true</span><span class="token punctuation">;</span>
+                            <span class="token function">unsubscribe</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                            terminals<span class="token punctuation">.</span><span class="token function">onNext</span><span class="token punctuation">(</span>Notification<span class="token punctuation">.</span><span class="token function">createOnError</span><span class="token punctuation">(</span>e<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                        <span class="token punctuation">}</span>
+                    <span class="token punctuation">}</span>
+
+                    <span class="token annotation punctuation">@Override</span>
+                    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">onNext</span><span class="token punctuation">(</span>T v<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                        <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token operator">!</span>done<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                            child<span class="token punctuation">.</span><span class="token function">onNext</span><span class="token punctuation">(</span>v<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                            <span class="token function">decrementConsumerCapacity</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                            arbiter<span class="token punctuation">.</span><span class="token function">produced</span><span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                        <span class="token punctuation">}</span>
+                    <span class="token punctuation">}</span>
+                <span class="token punctuation">}</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span><span class="token punctuation">;</span>
+<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>精简了n多代码。这个subscribeToSource Action0的意思就是 新建了一个terminalDelegatingSubscriber订阅源Observable，就是一个代理订阅者，主要的目的是关注源Observable发出的complet 和error事件。为什么是关注complete和error呢，因为这前面说过retryWhen和repeatWhen本质上的逻辑是一样的，只不过retryWhen关注的是<br>error,repeatWhen关注是complete。complete 和error都被包装成了Notification，然后发射出去。</p>
+<p>继续：</p>
+<pre class="line-numbers language-java"><code class="language-java"><span class="token keyword">final</span> Observable<span class="token operator">&lt;</span><span class="token operator">?</span><span class="token operator">></span> restarts <span class="token operator">=</span> controlHandlerFunction<span class="token punctuation">.</span><span class="token function">call</span><span class="token punctuation">(</span>
+                terminals<span class="token punctuation">.</span><span class="token function">lift</span><span class="token punctuation">(</span><span class="token keyword">new</span> <span class="token class-name">Operator</span><span class="token operator">&lt;</span>Notification<span class="token operator">&lt;</span><span class="token operator">?</span><span class="token operator">></span><span class="token punctuation">,</span> Notification<span class="token operator">&lt;</span><span class="token operator">?</span><span class="token operator">>></span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                    <span class="token annotation punctuation">@Override</span>
+                    <span class="token keyword">public</span> Subscriber<span class="token operator">&lt;</span><span class="token operator">?</span> <span class="token keyword">super</span> Notification<span class="token operator">&lt;</span><span class="token operator">?</span><span class="token operator">>></span> <span class="token function">call</span><span class="token punctuation">(</span><span class="token keyword">final</span> Subscriber<span class="token operator">&lt;</span><span class="token operator">?</span> <span class="token keyword">super</span> Notification<span class="token operator">&lt;</span><span class="token operator">?</span><span class="token operator">>></span> filteredTerminals<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                        <span class="token keyword">return</span> <span class="token keyword">new</span> <span class="token class-name">Subscriber</span><span class="token operator">&lt;</span>Notification<span class="token operator">&lt;</span><span class="token operator">?</span><span class="token operator">>></span><span class="token punctuation">(</span>filteredTerminals<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                            <span class="token annotation punctuation">@Override</span>
+                            <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">onCompleted</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                                filteredTerminals<span class="token punctuation">.</span><span class="token function">onCompleted</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                            <span class="token punctuation">}</span>
+
+                            <span class="token annotation punctuation">@Override</span>
+                            <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">onError</span><span class="token punctuation">(</span>Throwable e<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                                filteredTerminals<span class="token punctuation">.</span><span class="token function">onError</span><span class="token punctuation">(</span>e<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                            <span class="token punctuation">}</span>
+
+                            <span class="token annotation punctuation">@Override</span>
+                            <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">onNext</span><span class="token punctuation">(</span>Notification<span class="token operator">&lt;</span><span class="token operator">?</span><span class="token operator">></span> t<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                                <span class="token keyword">if</span> <span class="token punctuation">(</span>t<span class="token punctuation">.</span><span class="token function">isOnCompleted</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">&amp;&amp;</span> stopOnComplete<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                                    filteredTerminals<span class="token punctuation">.</span><span class="token function">onCompleted</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                                <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token keyword">if</span> <span class="token punctuation">(</span>t<span class="token punctuation">.</span><span class="token function">isOnError</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">&amp;&amp;</span> stopOnError<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                                    filteredTerminals<span class="token punctuation">.</span><span class="token function">onError</span><span class="token punctuation">(</span>t<span class="token punctuation">.</span><span class="token function">getThrowable</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                                <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token punctuation">{</span>
+                                    filteredTerminals<span class="token punctuation">.</span><span class="token function">onNext</span><span class="token punctuation">(</span>t<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                                <span class="token punctuation">}</span>
+                            <span class="token punctuation">}</span>
+
+                            <span class="token annotation punctuation">@Override</span>
+                            <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">setProducer</span><span class="token punctuation">(</span>Producer producer<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                                producer<span class="token punctuation">.</span><span class="token function">request</span><span class="token punctuation">(</span>Long<span class="token punctuation">.</span>MAX_VALUE<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                            <span class="token punctuation">}</span>
+                        <span class="token punctuation">}</span><span class="token punctuation">;</span>
+                    <span class="token punctuation">}</span>
+                <span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>这里稍微复杂一点，从里往外看，里面是terminals.lift操作了一下，主要逻辑在返回的新的Subscribeder的onNext这里，也就是对前面发过来的<br>Notificaiton拦截判断处理一下。一共有三种情况（其实就是决定retry和repeat的地方）：</p>
+<p> 1) t.isOnCompleted() &amp;&amp; stopOnComplete 条件如果满足 对应的是retryWhen 结束不会重试<br> 2）t.isOnError() &amp;&amp; stopOnError 条件满足 对应的是repeatWhen 结束，不会重复<br> 3）这种情况下我们针对retryWhen看，如果收到的是一个error事件，很明显前面两个条件都不会满足，直接来到这里，调用onNext,传递给下游</p>
+<p>我们把这个terminal.lift之后得到的Observable记作 o1。之后这个o1会作为参数传递给我们的controlHandler<br> 。前面说过这个controlHandler不是我们自己定义的那个notificationHandler，而是经过包装之后的RetryNotificationDematerializer。所以controlHandler.call(o1)这句代码展开就是：</p>
+<pre class="line-numbers language-java"><code class="language-java">    notificationHandler<span class="token punctuation">.</span><span class="token function">call</span><span class="token punctuation">(</span>o1<span class="token punctuation">.</span><span class="token function">map</span><span class="token punctuation">(</span>ERROR_EXTRACTOR<span class="token punctuation">)</span><span class="token punctuation">)</span>
+<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<p> 进一步展开：</p>
+<pre class="line-numbers language-java"><code class="language-java">    notificationHanlder<span class="token punctuation">.</span><span class="token function">call</span><span class="token punctuation">(</span>o1<span class="token punctuation">.</span><span class="token function">map</span><span class="token punctuation">(</span><span class="token keyword">new</span> <span class="token class-name">Func1</span><span class="token operator">&lt;</span>Notification<span class="token operator">&lt;</span><span class="token operator">?</span><span class="token operator">></span><span class="token punctuation">,</span> Throwable<span class="token operator">></span> <span class="token punctuation">{</span>
+        <span class="token annotation punctuation">@Override</span>
+        <span class="token keyword">public</span> Throwable <span class="token function">call</span><span class="token punctuation">(</span>Notification<span class="token operator">&lt;</span><span class="token operator">?</span><span class="token operator">></span> t<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            <span class="token keyword">return</span> t<span class="token punctuation">.</span><span class="token function">getThrowable</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>所以我们定义的notificationHandler里的Observable<throwable>是这么来的。加上我们自己添加的逻辑之后返回一个名为restarts的Observable</throwable></p>
+<p>最后，schedule了一个匿名的任务Action0:</p>
+<pre class="line-numbers language-java"><code class="language-java">     worker<span class="token punctuation">.</span><span class="token function">schedule</span><span class="token punctuation">(</span><span class="token keyword">new</span> <span class="token class-name">Action0</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            <span class="token annotation punctuation">@Override</span>
+            <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">call</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                restarts<span class="token punctuation">.</span><span class="token function">unsafeSubscribe</span><span class="token punctuation">(</span><span class="token keyword">new</span> <span class="token class-name">Subscriber</span><span class="token operator">&lt;</span>Object<span class="token operator">></span><span class="token punctuation">(</span>child<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+
+                    <span class="token annotation punctuation">@Override</span>
+                    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">onNext</span><span class="token punctuation">(</span>Object t<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                        <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token operator">!</span>child<span class="token punctuation">.</span><span class="token function">isUnsubscribed</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+
+                            <span class="token keyword">if</span> <span class="token punctuation">(</span>consumerCapacity<span class="token punctuation">.</span><span class="token function">get</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">></span> <span class="token number">0</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                                worker<span class="token punctuation">.</span><span class="token function">schedule</span><span class="token punctuation">(</span>subscribeToSource<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                            <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token punctuation">{</span>
+                                resumeBoundary<span class="token punctuation">.</span><span class="token function">compareAndSet</span><span class="token punctuation">(</span><span class="token boolean">false</span><span class="token punctuation">,</span> <span class="token boolean">true</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                            <span class="token punctuation">}</span>
+                        <span class="token punctuation">}</span>
+                    <span class="token punctuation">}</span>
+                <span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>注意这个任务让restarts进行订阅（为了方便起见，我们把这个匿名的Subscriber记为s1），然后在收到next事件的时候，执行前面的subscribeToSource任务，也就是向源Observable发起订阅的任务。</p>
+<p>那么这里的bug出现了，该怎么触发subscribeToSource这个任务呢？？？？？？？ 我们可以从后往前推，要触发这个subscribeToSource必须上游<br>调用onNext吐出事件来，而这里的上游就是restarts,也就是terminals terminals要吐出事件来，必须依赖源Observable吐出事件, 这里就形成了一个互相依赖的困境！！<!-- restarts是什么？是我们自己对传入的err那个Observable做变换以后返回的，所以如果我们做的变换逻辑里面如果发出了事件，那么才会导致这里 s1的onNext进行调用 --><br>termials本身既是Observable也是一个Observer,所以terminals.lift 的目的是对自己发出的事件进行拦截 ，但是自己一开始并没有发出事件，然后把这个lift之后的ob传给我们定义的notificationHandler，所以——————最开始的事件还是必须由我们发出来！！</p>
+<p>其实是child.setProducer那一行，会导致调用request(Long.MAX_VALUE)，导致subscribeToSource被调用了<br>所以入口就是这句话，然后发生错误，会回调到我们自定义的错误处理逻辑那里，我们前面提到过，为什么不使用传入的err会导致无效，<br>因为整个链式调用断开了，返回的restarts是我们自己的Observable，那么导致的结果就是，我们用自己的Observable订阅了那个匿名Subscriber，<br>可能调用一次onNext，然后就结束了。虽然后面确实会调用work.schedule(subscribeToSource)那一行代码，但是由于child已经结束了，订阅关系没了，这个subscribeToSource是不会执行的。但是如果换成是对err进行变换返回的Observable就不一样了，在接收到源Observable 发来的error的时候，会往下传递，一直走到我们的对error处理的逻辑，如果我们的处理是返回了一个Observable.just(“”)之类的，那么下游必然会接收到，也就是在匿名Subscriber那里的onNext调用，导致重新订阅源Observable，不然的话调用onComplete或者onError结束整个流程。</p>
+<p>最后我也看了 2.0.0的retryWhen的代码，做了很多修改，整体上来看，结构更加的清晰更容易看明白。所以建议直接看2.0.0的，没有这么绕。</p>
+<p>===写的太乱了（Rx确实有些绕，绕明白了，还是很好理解的）==不定期修改此博文</p>
+]]></content>
+      
+        
+        <tags>
+            
+            <tag> Rxjava </tag>
+            
+            <tag> Operator </tag>
+            
+        </tags>
+        
+    </entry>
+    
+    <entry>
       <title><![CDATA[关于事件机制的总结]]></title>
       <url>/2018/04/19/%E5%85%B3%E4%BA%8E%E4%BA%8B%E4%BB%B6%E6%9C%BA%E5%88%B6%E7%9A%84%E6%80%BB%E7%BB%93/</url>
       <content type="html"><![CDATA[<p>事件分发影响到自定义控件以及处理一些特殊问题时候特别有用，一直没有总结一下，导致<br>在碰到问题的时候思路不够清晰，其实对于单个View的事件分发其实很简单，稍微复杂点的其实<br>是在有ViewGroup的情况下。也不用举什么例子，直接就总结吧：<br>针对单个View<br>所有的事件都从ACTION_DOWN开始，入口是dispatchTouchEvent,因为对于单个View没有拦截之说，所以在dispatchTouchEvent里面只是判断View有没有设置touch监听或者点击，如果有，那么事件就接管了，后续的事件都会直接发给这个View</p>
@@ -367,96 +1118,6 @@
         <tags>
             
             <tag> -RecyclerView -Android </tag>
-            
-        </tags>
-        
-    </entry>
-    
-    <entry>
-      <title><![CDATA[迁移到Gradle3.0]]></title>
-      <url>/2018/01/11/%E8%BF%81%E7%A7%BB%E5%88%B0Gradle-Plugin-3/</url>
-      <content type="html"><![CDATA[<p>最近Gradle plugin更新到3.0之后出现了不少问题，不过官方也给出了迁移到3.0之后这些问题<br>的<a href="https://developer.android.com/studio/build/gradle-plugin-3-0-0-migration.html?utm_source=android-studio#update_gradle" target="_blank" rel="external">解决办法</a>。<br>无法翻墙的可以访问<a href="https://developer.android.google.cn/studio/build/gradle-plugin-3-0-0-migration.html?utm_source=android-studio#update_gradle" target="_blank" rel="external">国内站点</a></p>
-<p>更新到3.0之后，对应的gradle也必须更新到4.1，简单修改一下gradle.properties文件里面的<br>gradle地址为：https\://services.gradle.org/distributions/gradle-4.1-all.zip就可以了<br>值得注意的是 gradle plugin的更新现在在google仓库，所以得把google仓库加上</p>
-<pre class="line-numbers language-gradle"><code class="language-gradle">    repositories {
-        ...
-        // You need to add the following repository to download the
-        // new plugin.
-        google()
-    }
-<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-<h3 id="变体区分依赖管理"><a href="#变体区分依赖管理" class="headerlink" title="变体区分依赖管理"></a>变体区分依赖管理</h3><p>翻译的不太合适，大意就是现在3.0以及之后都是采用新的依赖管理机制，比如module A依赖了 module B，那么在构建A 的debug变体时也会自动依赖B的debug版本，不像以前得这么写一句<br><br><em>debugCompile project(path: ‘:data’, configuration: ‘debug’)</em></p>
-<ol>
-<li>定义风味<br>如果要构建多种flavor(实在不想翻译成风味，意会就行)，那么必须给每种flavor指定flavorDimension</li>
-</ol>
-<p>2.构建错误<br>如果你给app 增减了一个叫做staging的 buildType,但是其依赖并没有叫做staging的buildType，那么就会报错：</p>
-<pre class="line-numbers language-groovy"><code class="language-groovy">    Error<span class="token punctuation">:</span>Failed to resolve<span class="token punctuation">:</span> Could not resolve project <span class="token punctuation">:</span>mylibrary<span class="token operator">.</span>
-Required by<span class="token punctuation">:</span>
-    project <span class="token punctuation">:</span>app
-<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
-<p>那么可以使用matchingFallbacks来指定合适的替代依赖,依赖debug,qa或者release，会依赖第一个找到的依赖</p>
-<pre class="line-numbers language-groovy"><code class="language-groovy"> buildTypes <span class="token punctuation">{</span>
-        debug <span class="token punctuation">{</span><span class="token punctuation">}</span>
-        release <span class="token punctuation">{</span><span class="token punctuation">}</span>
-        staging <span class="token punctuation">{</span>
-            <span class="token comment" spellcheck="true">// Specifies a sorted list of fallback build types that the</span>
-            <span class="token comment" spellcheck="true">// plugin should try to use when a dependency does not include a</span>
-            <span class="token comment" spellcheck="true">// "staging" build type. You may specify as many fallbacks as you</span>
-            <span class="token comment" spellcheck="true">// like, and the plugin selects the first build type that's</span>
-            <span class="token comment" spellcheck="true">// available in the dependency.</span>
-            matchingFallbacks <span class="token operator">=</span> <span class="token punctuation">[</span><span class="token string">'debug'</span><span class="token punctuation">,</span> <span class="token string">'qa'</span><span class="token punctuation">,</span> <span class="token string">'release'</span><span class="token punctuation">]</span>
-        <span class="token punctuation">}</span>
-    <span class="token punctuation">}</span>
-<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-<p>与之类似的是，如果flavorDimension缺失，也可以指定替代的flavorDimension,用法如下</p>
-<pre class="line-numbers language-groovy"><code class="language-groovy">    android <span class="token punctuation">{</span>
-    defaultConfig<span class="token punctuation">{</span>
-        missingDimensionStrategy <span class="token string">'minApi'</span><span class="token punctuation">,</span> <span class="token string">'minApi18'</span><span class="token punctuation">,</span> <span class="token string">'minApi23'</span>
-        missingDimensionStrategy <span class="token string">'abi'</span><span class="token punctuation">,</span> <span class="token string">'x86'</span><span class="token punctuation">,</span> <span class="token string">'arm64'</span>
-    <span class="token punctuation">}</span>
-    flavorDimensions <span class="token string">'tier'</span>
-    productFlavors <span class="token punctuation">{</span>
-        free <span class="token punctuation">{</span>
-            dimension <span class="token string">'tier'</span>
-            missingDimensionStrategy <span class="token string">'minApi'</span><span class="token punctuation">,</span> <span class="token string">'minApi23'</span><span class="token punctuation">,</span> <span class="token string">'minApi18'</span>
-        <span class="token punctuation">}</span>
-        paid <span class="token punctuation">{</span><span class="token punctuation">}</span>
-    <span class="token punctuation">}</span>
-<span class="token punctuation">}</span>
-<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-<h3 id="为本地Module改变依赖配置"><a href="#为本地Module改变依赖配置" class="headerlink" title="为本地Module改变依赖配置"></a>为本地Module改变依赖配置</h3><p>由于区分变体依赖的原因，现在不需要像以前那样配置具体的依赖变体了，像debugImplementation debugCompile之类的用法都可以废弃了，如果遇到一下错误那都是这个原因</p>
-<pre class="line-numbers language-groovy"><code class="language-groovy">    Error<span class="token punctuation">:</span>Unable to resolve dependency <span class="token keyword">for</span> <span class="token string">':app@debug/compileClasspath'</span><span class="token punctuation">:</span>
-        Could not resolve project <span class="token punctuation">:</span>library<span class="token operator">.</span>
-    Error<span class="token punctuation">:</span>Unable to resolve dependency <span class="token keyword">for</span> <span class="token string">':app@release/compileClasspath'</span><span class="token punctuation">:</span>
-        Could not resolve project <span class="token punctuation">:</span>library<span class="token operator">.</span>
-<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span></span></code></pre>
-<p>应该改为以下配置：</p>
-<pre class="line-numbers language-groovy"><code class="language-groovy">    dependencies <span class="token punctuation">{</span>
-    <span class="token comment" spellcheck="true">// 该用法对本地module不再生效</span>
-    <span class="token comment" spellcheck="true">// debugImplementation project(path: ':library', configuration: 'debug')</span>
-    <span class="token comment" spellcheck="true">// releaseImplementation project(path: ':library', configuration: 'release')</span>
-
-    <span class="token comment" spellcheck="true">// 简单的一句implementation就可以启用"变体区分"来自动需找对应的本地依赖变体</span>
-    implementation <span class="token function">project</span><span class="token punctuation">(</span><span class="token string">':library'</span><span class="token punctuation">)</span>
-
-    <span class="token comment" spellcheck="true">//不过对于外部依赖仍然可以使用这种方式</span>
-    debugImplementation <span class="token string">'com.example.android:app-magic:12.3'</span>
-<span class="token punctuation">}</span>
-<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-<p>注意的是，尽管这些手动指定依赖的API仍然还可以用，但是最好不要用。因为使用project() dsl语法提供的依赖 必须和 使用依赖者 在buildType和flavor 以及其他属性上匹配。举个栗子，比如让一个debug变体去使用一个release变体是不可能的。</p>
-<p>说说新的语法和之前的区别：<br>implementation对应之前的compile 但是有一点不同—-不会暴露内部的依赖，举个栗子，比如module A依赖module B ，同时module B使用了类库 X，并且是用的implementation语法依赖的X,那么即使module A依赖了module B，类库X对module A也是不可见的。这样的好处是可以加快编译速度，因为如果X发生变化仅仅需要 重新编译X和依赖X的 module B就可以了</p>
-<p>api 对应compile,和之前的compile是完全一样的，会暴露内部依赖</p>
-<p>compileOnly 对应 provided</p>
-<p>runtimeOnly 对应apk(好吧，之前都不知道有apk这个dsl)</p>
-]]></content>
-      
-        
-        <tags>
-            
-            <tag> Gradle </tag>
-            
-            <tag> AndroidStudio </tag>
-            
-            <tag> Gradle3.x </tag>
             
         </tags>
         

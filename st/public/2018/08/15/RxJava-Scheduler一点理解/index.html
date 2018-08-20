@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  
+  <meta name="keywords" content="Android Blog">
+  <meta name="description" content="hirayclay&#39;s Android Blog site">
+  
+  <title>Blog</title>
+  
+    <!-- stylesheets list from config.yml -->
+    
+      <link rel="stylesheet" href="/css/materialize.min.css">
+    
+      <link rel="stylesheet" href="/css/main.min.css">
+    
+  
+  <style type="text/css">
+      html{
+          font-family: sans-serif;
+          font-weight: 300;
+      }
+      @font-face {
+          font-family: 'Material Icons';
+          font-style: normal;
+          font-weight: 400;
+          src: url(/fonts/MaterialIcons-Regular.eot);
+          src: url(/fonts/MaterialIcons-Regular.woff2) format('woff2'),
+          url(/fonts/MaterialIcons-Regular.woff) format('woff'),
+          url(/fonts/MaterialIcons-Regular.ttf) format('truetype')
+      }
+  </style>
+<link rel="stylesheet" href="/css/prism.css" type="text/css">
+<link rel="stylesheet" href="/css/prism-line-numbers.css" type="text/css"></head>
+<body>
+<div id="menu-box"><a href="javascript:void(0)" id="menu" data-activates="slide-out" class="button-collapse menu" ><span class="nav-btn"></span></a></div>
+<div id="menu-outer">
+  <div id="menu-inner">
+      <ul id="slide-out" class="side-nav" >
+    <div class="nav-header"  style="background-image: url(/images/header-bg.png);background-color:#26A69A">
+    <div class="header-box"><img src="/images/header.png" ondragstart="return false;"></div>
+    <p>hirayclay</p>
+    <div class="nav-link">
+        
+        
+        <a  href="https://github.com/HirayClay" target="_blank"><div class="link-box github"></div></a>
+        
+        
+        <a href="mailto:2425875132@qq.com"><div class="link-box email"></div></a>
+        
+        
+        
+    </div>
+    <div class="nav-search">
+        <form id="search-form"> <!-- 搜索框相关 -->
+            <input type="text" id="local-search-input" name="q" results="0" placeholder="搜索..." class="search form-control" autocomplete="off" autocorrect="off"/>
+            <div class="nav-search-img"><i class="material-icons">search</i></div>
+        </form>
+        <div id="local-search-result"></div> <!-- 搜索结果区 -->
+        <p class='no-result'>无搜索结果</p>
+    </div>
+</div>
+    <!--Homepage-->
+
+<li class="nav-list">
+    <a href="/" target="_self">
+        <div class="nav-ico"><i class="material-icons">home</i> </div><p>主页</p>
+    </a>
+</li>
+
+<!--archives-->
+
+<li class="nav-list dropdown-btn">
+    <a  class=""  target="_self">
+        <div class="nav-ico"><i class="material-icons">assignment</i></div><p>归档</p><div class="dropdown-ico"><i class="material-icons">arrow_drop_down</i></div>
+    </a>
+</li>
+
+<ul class="dropdown-menu dropdown" >
+    <li class="nav-dropdown-list">
+        <a class="archive-link" href="/archives/2018/08/">August 2018<span class="archive-count">5</span></a></li><li class="nav-dropdown-list"><a class="archive-link" href="/archives/2018/04/">April 2018<span class="archive-count">3</span></a></li><li class="nav-dropdown-list"><a class="archive-link" href="/archives/2018/01/">January 2018<span class="archive-count">4</span></a></li><li class="nav-dropdown-list"><a class="archive-link" href="/archives/2017/12/">December 2017<span class="archive-count">1</span></a></li><li class="nav-dropdown-list"><a class="archive-link" href="/archives/2017/09/">September 2017<span class="archive-count">2</span></a>
+    </li>
+</ul>
+<!--categories-->
+
+<ul class="dropdown-menu dropdown" >
+    <li class="nav-dropdown-list">
+        
+    </li>
+</ul>
+<!--tags-->
+
+<li class="nav-list">
+    <a href="/archives" target="_self">
+        <div class="nav-ico"><i class="material-icons">bookmark</i> </div><p>标签</p>
+    </a>
+</li>
+
+<!--photo-->
+
+<!--friends-->
+
+<!--about-->
+
+
+</ul>
+
+  </div>
+</div>
+
+<div id="content-outer">
+  <div id="content-inner">
+    
+<article id="post">
+  <div class="post-page-title"  style="background-color:#26A69A;background-image:url(/images/random/vateral-9.png)" >
+  <h2>RxJava Scheduler一点理解</h2>
+    
+  <p>作者:hirayclay &nbsp&nbsp 发布于:<time datetime="2018-08-15T09:32:59.000Z">
+          2018-08-15
+    </time>
+  </p>
+    
+  </div>
+  <div class="post-page-content">
+  <h3 id="subscribeOn"><a href="#subscribeOn" class="headerlink" title="subscribeOn"></a>subscribeOn</h3><p>通过subscribeOn 和 ObserveOn 两个方法rxjava可以灵活的指定任务执行的线程和指定收到事件的线程<br>直接看源码：</p>
+<pre class="line-numbers language-java"><code class="language-java">        <span class="token keyword">public</span> <span class="token keyword">final</span> Observable<span class="token operator">&lt;</span>T<span class="token operator">></span> <span class="token function">subscribeOn</span><span class="token punctuation">(</span>Scheduler scheduler<span class="token punctuation">,</span> <span class="token keyword">boolean</span> requestOn<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token keyword">this</span> <span class="token keyword">instanceof</span> <span class="token class-name">ScalarSynchronousObservable</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            <span class="token keyword">return</span> <span class="token punctuation">(</span><span class="token punctuation">(</span>ScalarSynchronousObservable<span class="token operator">&lt;</span>T<span class="token operator">></span><span class="token punctuation">)</span><span class="token keyword">this</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">scalarScheduleOn</span><span class="token punctuation">(</span>scheduler<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token keyword">return</span> <span class="token function">unsafeCreate</span><span class="token punctuation">(</span><span class="token keyword">new</span> <span class="token class-name">OperatorSubscribeOn</span><span class="token operator">&lt;</span>T<span class="token operator">></span><span class="token punctuation">(</span><span class="token keyword">this</span><span class="token punctuation">,</span> scheduler<span class="token punctuation">,</span> requestOn<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>使用了lift操作，看一下OperatorSubscribeOn这个操作符,重点是call方法：</p>
+<pre class="line-numbers language-java"><code class="language-java">   <span class="token annotation punctuation">@Override</span>
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">call</span><span class="token punctuation">(</span><span class="token keyword">final</span> Subscriber<span class="token operator">&lt;</span><span class="token operator">?</span> <span class="token keyword">super</span> T<span class="token operator">></span> subscriber<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token keyword">final</span> Worker inner <span class="token operator">=</span> scheduler<span class="token punctuation">.</span><span class="token function">createWorker</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+        SubscribeOnSubscriber<span class="token operator">&lt;</span>T<span class="token operator">></span> parent <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">SubscribeOnSubscriber</span><span class="token operator">&lt;</span>T<span class="token operator">></span><span class="token punctuation">(</span>subscriber<span class="token punctuation">,</span> requestOn<span class="token punctuation">,</span> inner<span class="token punctuation">,</span> source<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        subscriber<span class="token punctuation">.</span><span class="token function">add</span><span class="token punctuation">(</span>parent<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        subscriber<span class="token punctuation">.</span><span class="token function">add</span><span class="token punctuation">(</span>inner<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+        inner<span class="token punctuation">.</span><span class="token function">schedule</span><span class="token punctuation">(</span>parent<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>这个SubscribeOnSubscriber类型的parent实际是个Action0,然后inner.schedule(parent)直接让这个任务在指定的线程执行了，<br>然后事件到来的时候，简单调用这个call方法参数传来的Subscriber 调用一下onNext onError onComplete就完了。嗯，其实也很简单，一下就懂了，就是把source Observable的订阅放到一个指定的Scheduler中执行，然后事件也会在所在的Scheduler中发出来。其实可以得出一个结论：无论subscribeOn调用多少次，调度都只会在第一次调用subscribeOn指定的线程中执行。比如一个Observable 调用了subscribeOn(Schedulers.io).subscribeOn(Schedulers.compution()),其实这样做的效果可以拆分看，第一次调用subscribeOn把调度指定在io线程，那么后面的调度就是想把  ‘把调度指定在io’ 的调度指定在computation线程，换个说法，我有一个操作是要指定调度在io线程 ，只不过我把这个操作放在了computation线程去执行而已，有种脱了什么放什么的多余+_+(实在找不出什么恰当的比喻了)。</p>
+<p>我们以一个小栗子来看一下整个流程：</p>
+<pre><code>
+ val observable = Observable.create(Observable.OnSubscribe<int> { subscriber ->
+            Log.i("source===>", Thread.currentThread().name)
+            for (i in 0..0) {
+                subscriber.onNext(i)
+            }
+
+            subscriber.onCompleted()
+        })
+ val map = observable
+                .observeOn(Schedulers.computation())
+                .subscribeOn(Schedulers.newThread())
+                .map(Func1<int, string=""> { integer ->
+                    Log.i("map===>", Thread.currentThread().name)
+                    integer!!.toString()
+                })
+
+
+ map.observeOn(Schedulers.newThread())
+                .subscribe(Action1<string> { s -> Log.i("onNext===>", Thread.currentThread().name) })
+</string></int,></int></code></pre>
+
+<p>首先创建一个简单的发射一个数字的Observable，然后调用map操作转换成string 然后打印出来。注意subscribeOn 和ObserveOn的位置，我们是先observeOn 然后subscribeOn<br>打印结果：</p>
+<pre>
+    <code>
+    source===>: RxNewThreadScheduler-2
+    map===>: RxComputationScheduler-1
+    onNext===>: RxNewThreadScheduler-1
+    </code>
+</pre>
+
+<p>可以看到最后的onNext 调用并没有像预想的那样 发生在observeOn指定的computation 线程中，而是subscribeOn指定的创建的新线程中。<br>其实结合前面的subscribeOn的源码分析可以知道，调用subscribeOn之后的所有操作其实都会在subscribeOn 指定的线程中，这也是为什么map 和subscribe 两个操作都发生在RxNewThreadScheduler的原因。</p>
+<h3 id="observeOn"><a href="#observeOn" class="headerlink" title="observeOn"></a>observeOn</h3><p>ObserveOn和SubscribeOn不太一样，subscribeOn方法是放在哪儿都可以调用多次也只有第一次调用的效果。ObserveOn也可以多次调用，但是每次都会生效，要理解清楚还得看代码，直接进入OperatorObserveOn操作符的call方法</p>
+<pre><code>
+       @Override
+    public Subscriber<? super T> call(Subscriber<? super T> child) {
+        if (scheduler instanceof ImmediateScheduler) {
+            // avoid overhead, execute directly
+            return child;
+        } else if (scheduler instanceof TrampolineScheduler) {
+            // avoid overhead, execute directly
+            return child;
+        } else {
+            ObserveOnSubscriber<t> parent = new ObserveOnSubscriber<t>(scheduler, child, delayError, bufferSize);
+            parent.init();
+            return parent;
+        }
+    }
+
+</t></t></code></pre>
+不同的是 observeOn 的call方法是有返回值的，对于很多call方法有返回值的操作符，其实都可以认作是代理模式。包装了下游的subscriber，生成新的subscriber,然后让这个新的subscriber订阅上游observable,自己内部先处理，然后转发给下游的subscriber,达到代理的目的。我们再看一下这个ObserveOnSubscriber:
+
+1)
+<pre><code>
+         @Override
+        public void onNext(final T t) {
+            if (isUnsubscribed() || finished) {
+                return;
+            }
+            if (!queue.offer(NotificationLite.next(t))) {
+                onError(new MissingBackpressureException());
+                return;
+            }
+            schedule();
+        }
+</code></pre>
+
+<p>当接收到上游发来的事件时，调用onNext,然后先存入队列，存入成功，则会执行schedule方法进行调度，schedule方法了解一下：</p>
+<p>2)</p>
+<p><pre><code><br>            protected void schedule() {<br>            if (counter.getAndIncrement() == 0) {<br>                recursiveScheduler.schedule(this);<br>            }<br>        }<br></code></pre><br>非常简单的一句，如果当前没有任务（发射事件）调度，那么开始，并且把计数器加一，这里实际是对多线程的考虑，同一时刻只能有一个线程进行调度 。结合上面的onNext方法一起看就是——————如果有任务，先放入队列，放不进去就调用onError，不然就调度，而调度的话又必须满足当前没有其他线程在调度。调度任务会执行ObserveOnSubscriber的call方法,这样就实现了线程切换。call方法内部就是让传进来的child subscriber接收上游的事件，到这里我们可以得出结论ObserveOn 其实只对ObserveOn调用之后的操作生效。举个例子(kotlin编写)：</p>
+<p><pre><code><br> val ob = Observable.create(Observable.OnSubscribe<int> { t -&gt;<br>            t.onNext(1)<br>            t.onCompleted()<br>        })<br> ob.observeOn(Schedulers.io())<br>                .map { it-&gt;it.toString() }<br>                .observeOn(Schedulers.computation())<br>                .map { it-&gt; it.toCharArray() }<br>                .subscribe {  }<br></int></code></pre><br>上游简单发射一个Int数字,第一次调用ObserveOn 那么对于这第一个ObserveOn的操作符而言call方法传入的subscriber是下游map 生成的MapSubscriber,所以第一个map的操作发生在io线程，当同理第二个map 也会发生在computation线程。其实到这里可以总结出来ObserveOn方法的作用其实就是将之后的操作调度ObserveOn指定的线程中执行。</p>
+<p>3)<br>call 方法实现：</p>
+<p><pre><code><br>     @Override<br>        public void call() {<br>            long missed = 1L;//能进入到call这个方法，说明进入前，说明只有一次调度（就是本次调度）<br>            long currentEmission = emitted;<br>            final Queue<object> q = this.queue;<br>            final Subscriber&lt;? super T&gt; localChild = this.child;<br>            for (;;) {<br>                long requestAmount = requested.get();//获取下游的请求数量</object></code></pre></p>
+<pre><code>            while (requestAmount != currentEmission) { //直到把下游的请求都发射完为止
+                boolean done = finished;
+                Object v = q.poll();
+                boolean empty = v == null;
+
+                if (checkTerminated(done, empty, localChild, q)) { //是否已经结束
+                    return;
+                }
+
+                if (empty) {
+                    break;
+                }
+
+                localChild.onNext(NotificationLite.&lt;T&gt;getValue(v));
+
+                currentEmission++;
+                if (currentEmission == limit) {
+                    requestAmount = BackpressureUtils.produced(requested, currentEmission);
+                    request(currentEmission);
+                    currentEmission = 0L;
+                }
+            }
+
+            if (requestAmount == currentEmission) {
+                if (checkTerminated(finished, q.isEmpty(), localChild, q)) {
+                    return;
+                }
+            }
+
+            emitted = currentEmission;
+            missed = counter.addAndGet(-missed);//如果不是0，其他线程可能也在请求，导致新的多个调度任务，那么还得继续处理，记录调度任务数量，进入下次循环，直到任务全部处理完为止
+            if (missed == 0L) {
+                break;
+            }
+        }
+    }
+</code></pre><p><br>大致逻辑梳理一下：</p>
+<ul>
+<li>首先声明了一个missed  = 1L记录需要调度的数量以及一个currentMission记录已经发射的事件数量；</li>
+<li>一个for循环嵌套了一个while循环：<ol>
+<li>while循环的作用就是发射事件，发射事件之前检查是否已经结束，结束的原因可能是已经结束了或者发生错误</li>
+<li>每发射一个事件就计数</li>
+</ol>
+</li>
+</ul>
+
+  </div>
+  <!--评论块-->
+    
+
+</article>
+<nav class="post-nav">
+  <!-- Prev Nav -->
+    
+  <a href="/2018/08/16/ProducerArbiter/" id="post_nav-newer" class="post-nav-content prev-content">
+      新篇
+  </a>
+    
+
+
+  <!-- Next Nav -->
+    
+  <a href="/2018/08/15/RxJava中的-Producer/" id="post_nav-older" class="post-nav-content next-content">
+      旧篇
+  </a>
+    
+</nav>
+<div class="post-toc-btn"><i class="material-icons">format_list_numbered</i></div>
+<div class="post-toc-none"><p>(无)</p></div>
+<div class="post-toc-box">
+    <ol class="post-toc"><li class="post-toc-item post-toc-level-3"><a class="post-toc-link" href="#subscribeOn"><span class="post-toc-number">1.</span> <span class="post-toc-text">subscribeOn</span></a></li><li class="post-toc-item post-toc-level-3"><a class="post-toc-link" href="#observeOn"><span class="post-toc-number">2.</span> <span class="post-toc-text">observeOn</span></a></li></ol>
+</div>
+<!--<div class="post-back"><i class="material-icons">arrow_back</i></div>-->
+<script type="text/javascript">
+    menu();
+</script>
+  </div>
+</div>
+<div id="bottom-outer">
+  <div id="bottom-inner">
+    <a  id="top-button" onfocus="this.blur();"><div class="up upinbody" style="background-color:#26A69A"><i class="material-icons material-up">vertical_align_top</i></div></a>
+
+
+<p style="line-height: 45px">Copyright ©  2017  Blog</p>
+<p style="line-height: 45px">Powered by <a href="https://hexo.io/" target="_blank"> Hexo </a> && Theme - <a href="https://github.com/moumao/hexo-theme-Vateral" target="_blank">Vateral</a></p>
+
+  </div>
+</div>
+
+<!--影集界面需要的资源-->
+
+
+
+<!-- scripts list from theme config.yml -->
+
+<script src="/js/jquery-3.1.1.min.js"></script>
+
+<script src="/js/materialize.min.js"></script>
+
+<script src="/js/main.min.js"></script>
+
+
+<script>
+    NProgress.start();
+    NProgress.done();
+    lazy();
+    links();
+    window.onpopstate = menu();
+    //pjax操作
+    $(document).pjax('a:not(.nopjax)', '#content-inner', {fragment:'#content-inner', timeout:8000});
+    $(document).on('pjax:start', NProgress.start).on('pjax:end', NProgress.done)
+        .on('pjax:end', () => {
+            dowmdiv();
+            lazy();
+            toc();
+            links();
+            menu();
+        });
+</script>
+
+</body>
+</html>

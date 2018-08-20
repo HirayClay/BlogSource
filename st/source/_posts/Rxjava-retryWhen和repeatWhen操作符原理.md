@@ -2,8 +2,8 @@
 title: Rxjava retryWhen和repeatWhen操作符原理
 date: 2018-08-08 16:29:42
 tags: 
-    -Rxjava
-    -Operator
+    - Rxjava
+    - Operator
 ---
 ### 契机
 因为最近使用了mvvm，不再用mvp,并且大量使用RxJava 简化一些场景下的操作。以至发现了一个操作符retryWhen，搜了一些资料，几乎都是 一位叫DanLew的外国人写的一篇文章或者其译文。原文在这[ >> ](https://blog.danlew.net/2016/01/25/rxjavas-repeatwhen-and-retrywhen-explained/),思路清晰，知道了怎么用，一些关键的注意点，但就是没有分析具体原理和流程是怎样(但是看他提到的一些词，应该是搞明白了内部原理的)。痛定思痛————当然也是觉得这个操作符非常有意思，所以仔细研究一番。（说实话，我也是最近才觉得RxJava有些源码真的值得好好翻一翻）。本文基于rxjava 1.3.8。
@@ -250,4 +250,6 @@ termials本身既是Observable也是一个Observer,所以terminals.lift 的目�
 可能调用一次onNext，然后就结束了。虽然后面确实会调用work.schedule(subscribeToSource)那一行代码，但是由于child已经结束了，订阅关系没了，这个subscribeToSource是不会执行的。但是如果换成是对err进行变换返回的Observable就不一样了，在接收到源Observable 发来的error的时候，会往下传递，一直走到我们的对error处理的逻辑，如果我们的处理是返回了一个Observable.just("")之类的，那么下游必然会接收到，也就是在匿名Subscriber那里的onNext调用，导致重新订阅源Observable，不然的话调用onComplete或者onError结束整个流程。
 
 
-===写的太乱了==不定期修改此博文
+最后我也看了 2.0.0的retryWhen的代码，做了很多修改，整体上来看，结构更加的清晰更容易看明白。所以建议直接看2.0.0的，没有这么绕。
+
+===写的太乱了（Rx确实有些绕，绕明白了，还是很好理解的）==不定期修改此博文
