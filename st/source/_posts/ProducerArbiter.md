@@ -176,10 +176,10 @@ public void request(long n) {
 
             Producer p = currentProducer;
             if (p != null) {
-                p.request(n);
+                p.request(n);//3
             }
 
-            emitLoop();//3
+            emitLoop();//4
             skipFinal = true;
         } finally {
             if (!skipFinal) {
@@ -194,15 +194,17 @@ public void request(long n) {
 
 2) skipFinal 实际上的作用是决定是否跳过最后的finally代码块（当然实际并不能跳过，finally代码块的作用只是为了预防emitLoop方法发生错误而没有安全的将emitting 置为false，导致一直阻塞后续的请求）。
 
-3) emitLoop的作用实际就是真正调用实际的Producer 请求数据的过程。代码能够走到这一步说明emitting = false,此时没有来自其他线程的数据请求，执行emitLoop漏循环处理已经积累的请求。
+3) 这里必须详细解释为什么是请求n，而不是requested。因为下游发出数据请求的时候，这些请求积累是发生在每个Producer上的，此刻的n实际是下游在向currentProducer请求，而requested是之前积累的，可能是之前的missedProducer上积累的请求，更加详细的逻辑会在emitLoop中。
+
+4) emitLoop的作用实际就是真正调用实际的Producer 请求数据的过程。代码能够走到这一步说明emitting = false,此时没有来自其他线程的数据请求，执行emitLoop漏循环处理已经积累的请求。
 
 #### setProducer方法
 
 ```java
     public void setProducer(Producer newProducer) {
         synchronized (this) {
-            if (emitting) {//1
-                missedProducer = newProducer == null ? NULL_PRODUCER : newProducer;
+            if (emitting) {
+                missedProducer = newProducer == null ? NULL_PRODUCER : newProducer;//1
                 return;
             }
             emitting = true;
@@ -210,8 +212,8 @@ public void request(long n) {
         boolean skipFinal = false;
         try {
             currentProducer = newProducer;
-            if (newProducer != null) {//2
-                newProducer.request(requested);
+            if (newProducer != null) {
+                newProducer.request(requested);//2
             }
 
             emitLoop();
@@ -225,6 +227,9 @@ public void request(long n) {
         }
     }
 ```
+1) 如果传入的newProducer是null则会把missedProducer设置成NULL_PRODUCER，可以说是一个标记，在emitLoop中作为判断条件使用。
+2) 请求了requested个，貌似和前面request方法的<strong>//3</strong>处有点不同，这是因为如果切换了Producer，那么之前的Producer没有生产的数据，再也不会有机会产生，所以这些
+积累下的数据就应该全部交给新的Prodcuer来产生。
 
 #### emitLoop方法
 ```java 
@@ -250,7 +255,7 @@ public void emitLoop() {
 
             long r = requested;
 
-            if (r != Long.MAX_VALUE) {
+            if (r != Long.MAX_VALUE) {//1
                 long u = r + localRequested;
                 if (u < 0 || u == Long.MAX_VALUE) {
                     r = Long.MAX_VALUE;
@@ -264,14 +269,14 @@ public void emitLoop() {
                     requested = v;
                 }
             }
-            if (localProducer != null) {
+            if (localProducer != null) {//2
                 if (localProducer == NULL_PRODUCER) {
                     currentProducer = null;
                 } else {
                     currentProducer = localProducer;
                     localProducer.request(r);
                 }
-            } else {
+            } else {//3
                 Producer p = currentProducer;
                 if (p != null && localRequested != 0L) {
                     p.request(localRequested);
@@ -280,4 +285,13 @@ public void emitLoop() {
         }
     }
 ```
-？？emitLoop 实际使用underlying producer在发射数据？？ProducerArbiter实际是完善了Subscriber只能累加已经产生的请求，而不能减去已经生产的请求而导致同一个请求，在生产者变化的情况下，请求会被执行两次，而ProducerArbiter做了加法减法计数两项工作。
+emitLoop方法比较长，直接看真的容易看不懂，我也是最开始卡在这里很久，后来发现最好是用单一Producer的角度分析，从简化的角度理解，如果此时一直都只有一个Producer,不存在Producer切换，那么可以认为此时的ProducerArbiter实际是一个普通的Producer，这里的emitLoop方法实际上处理的只是missedRequested，实际上和RangeProducer(以RangeProducer为例)的背压处理情况下的slowPath方法极度相似————不停的处理积累的请求直到把积累的请求完全处理完。
+
+此时再来看emitLoop，其实只是多了Producer切换的情况，其实如果我们把Producer也看作是一种数据————没错！我们把Producer也看成是request一样，好比某处下游正在请求数据一样，只不过这个请求是请求切换Producer。对应请求数据，我们是寻找合适的Producer把请求发出去，对应Producer我们则应该是寻找合适的数据去发射。 此时我们再来看emitLoop的逻辑，退出漏循环的条件是所有的请求都处理完毕(准确说是：积累的请求处理完、该切换的Producer切换完毕以及累计处理完的事件计数完毕)，这里很容易理解。
+
+1) 整个if语句块实际是进行已经消费的事件进行减法计数，减去已经消费的事件数
+
+2) 如果localProducer（实际是missedProducer）不为空，表示存在Producer切换，不过还得继续判断（因为切换的时候可能是传的一个为null的Producer）,如果localProducer == NULL_PRODUCER实际上就是把当前的Producer设置成null了也就是不设置数据源，不然的话 切换数据源，并且把累计的请求处理完。
+
+
+至此整个ProducerArbiter分析完毕，但是ProducerArbiter存在的问题是，没有保证事件是串行发射的，举个例子，此时前面的request正在被Producer A执行，正在发射事件给subscriber，但是紧接着切换了Producer B,此时Producer B也开始给Subscriber发射事件，这样导致的结果就是事件发射是并行的，必然会发生问题，这也显然不是我们想要的。其实我们这时候就需要ProducerObserverArbiter，看名字就是知道它还是个观察者。
