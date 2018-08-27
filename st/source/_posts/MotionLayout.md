@@ -12,9 +12,9 @@ tags:
 简单来说，传统的动画一旦运行起来我们就无法控制，我们能做的只是何时开始，何时结束，或者何时取消，对于已经运行中的动画我们无法控制。那么有些情况我们就没法做的更好，比如用户在滑动列表时，其他控件如何响应用户的滑动操作并做出对应的动画————当然我们并不是做不到，而是不太优雅，如果能够配置并定义好这些东西，那么再好不过。MotionLayout做的就是这些。
 
 ### MotionLayout实现折叠动画
-以前为了实现一个不那么复杂的滑动折叠效果，需要CoordinatorLayout CollapsingToolBar的帮助才能做到。而且布局文件里面的内容显得有些过于冗长。下面使用MotionLayout实现下面这个效果
+以前为了实现一个不那么复杂的滑动折叠效果，需要CoordinatorLayout CollapsingToolBar的帮助才能做到。而且布局文件里面的内容显得有些过于冗长。下面使用MotionLayout实现下面这个效果。
 
-<img src="https://gitee.com/cjjmyj/StackLayoutManager/raw/master/static/hrreverse.gif" width="400px" height="250px"/>
+<img src="https://raw.githubusercontent.com/HirayClay/draft/master/motionglayout_rotation.gif" width="200" height="400px"/>
 
 布局十分简单：
 ```xml
@@ -74,7 +74,7 @@ motion_09_coordinatorlayout_header:
 ```
 
 
-没有任何的嵌套，只是简单利用了ConstraintLayout的特性把控件放到合适的位置。可能会奇怪，并没有看到任何与动画有关的东西，难道是用Java代码在控制吗？并不是，动画的入口实则在layoutDescription属性上，这个属性的值指向一个xml文件：
+没有任何的嵌套，只是简单利用了ConstraintLayout(MotiongLayout继承自ConstraintLayout)的特性把控件放到合适的位置。可能会奇怪，并没有看到任何与动画有关的东西，难道是用Java代码在控制吗？并不是，动画的入口实则在layoutDescription属性上，这个属性决定了MotiongLayout和ConstraintLayout的不同，这个属性的值指向一个xml文件：
 
 ```xml
     <MotionScene
@@ -128,4 +128,16 @@ motion_09_coordinatorlayout_header:
 
 </MotionScene>
 ```
-代码其实不多，最外边是MotiongScene，包含了所有动画需要的元素。Transition是
+代码其实不多，最外边是MotiongScene，包含了所有动画需要的元素。Transition是:
+
+| Attributes | Description |
+| :------ | ------: |
+| android:id | The id of the Transition |
+|constraintSetStart| ConstraintSet to be used as the start constraints or a layout file to get the constraint from
+|constraintSetEnd | ConstraintSet to be used as the end constraints or a layout file to get the constraint from
+|interpolator |
+|duration|
+|staggered | float: a quick way to stagger the objects moving|
+|&lt;OnSwipe&gt; | Adds support for touch handling (optional) |
+|&lt;OnClick&gt;| Adds support for triggering transition (optional)
+|&lt;KeyFrameSet&gt;|Describes a set of Key object which modify the animation between constraint sets.|
