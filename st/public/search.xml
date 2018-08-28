@@ -3,6 +3,105 @@
   
     
     <entry>
+      <title><![CDATA[ViewDragHelper在遇到到clickable=true时 无法拖动View的问题解决过程]]></title>
+      <url>/2018/08/28/ViewDragHelper%E5%9C%A8%E9%81%87%E5%88%B0%E5%88%B0clickable-true%E6%97%B6-%E6%97%A0%E6%B3%95%E6%8B%96%E5%8A%A8View%E7%9A%84%E9%97%AE%E9%A2%98%E8%A7%A3%E5%86%B3%E8%BF%87%E7%A8%8B/</url>
+      <content type="html"><![CDATA[<p>ViewDragHelper 使用很简单，看到一篇文章说如果支持ViewDragHelper的ViewGroup的子View设置了clickable = true会导致无法拖动子View。但是解决办法是从ViewDragHelper源码出发覆写了，<br>当时觉得虽然也能解决问题，但是我觉得可以从事件分发的角度来解决。</p>
+<p>于是我自定义了一个非常简单的Layout来验证这件事：</p>
+<pre class="line-numbers language-java"><code class="language-java"><span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">NSLayout</span> <span class="token keyword">extends</span> <span class="token class-name">LinearLayout</span> <span class="token punctuation">{</span>
+
+    <span class="token keyword">private</span> <span class="token keyword">static</span> <span class="token keyword">final</span> String TAG <span class="token operator">=</span> <span class="token string">"NSLayout"</span><span class="token punctuation">;</span>
+
+    <span class="token keyword">class</span> <span class="token class-name">DragCallBack</span> <span class="token keyword">extends</span> <span class="token class-name">ViewDragHelper<span class="token punctuation">.</span>Callback</span> <span class="token punctuation">{</span>
+
+        <span class="token annotation punctuation">@Override</span>
+        <span class="token keyword">public</span> <span class="token keyword">boolean</span> <span class="token function">tryCaptureView</span><span class="token punctuation">(</span><span class="token annotation punctuation">@NonNull</span> View child<span class="token punctuation">,</span> <span class="token keyword">int</span> pointerId<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            <span class="token keyword">return</span> <span class="token boolean">true</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token annotation punctuation">@Override</span>
+        <span class="token keyword">public</span> <span class="token keyword">int</span> <span class="token function">clampViewPositionHorizontal</span><span class="token punctuation">(</span><span class="token annotation punctuation">@NonNull</span> View child<span class="token punctuation">,</span> <span class="token keyword">int</span> left<span class="token punctuation">,</span> <span class="token keyword">int</span> dx<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            <span class="token keyword">return</span> Math<span class="token punctuation">.</span><span class="token function">min</span><span class="token punctuation">(</span>Math<span class="token punctuation">.</span><span class="token function">max</span><span class="token punctuation">(</span><span class="token number">0</span><span class="token punctuation">,</span> left<span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token function">getWidth</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">-</span> child<span class="token punctuation">.</span><span class="token function">getWidth</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token annotation punctuation">@Override</span>
+        <span class="token keyword">public</span> <span class="token keyword">int</span> <span class="token function">clampViewPositionVertical</span><span class="token punctuation">(</span><span class="token annotation punctuation">@NonNull</span> View child<span class="token punctuation">,</span> <span class="token keyword">int</span> top<span class="token punctuation">,</span> <span class="token keyword">int</span> dy<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            <span class="token keyword">return</span> Math<span class="token punctuation">.</span><span class="token function">min</span><span class="token punctuation">(</span>Math<span class="token punctuation">.</span><span class="token function">max</span><span class="token punctuation">(</span><span class="token number">0</span><span class="token punctuation">,</span> top<span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token function">getHeight</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">-</span> child<span class="token punctuation">.</span><span class="token function">getHeight</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">private</span> ViewDragHelper dragHelper<span class="token punctuation">;</span>
+
+
+    <span class="token keyword">public</span> <span class="token function">NSLayout</span><span class="token punctuation">(</span>Context context<span class="token punctuation">,</span> <span class="token annotation punctuation">@Nullable</span> AttributeSet attrs<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token keyword">super</span><span class="token punctuation">(</span>context<span class="token punctuation">,</span> attrs<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        dragHelper <span class="token operator">=</span> ViewDragHelper<span class="token punctuation">.</span><span class="token function">create</span><span class="token punctuation">(</span><span class="token keyword">this</span><span class="token punctuation">,</span> <span class="token keyword">new</span> <span class="token class-name">DragCallBack</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+
+    <span class="token annotation punctuation">@Override</span>
+    <span class="token keyword">public</span> <span class="token keyword">boolean</span> <span class="token function">onInterceptTouchEvent</span><span class="token punctuation">(</span>MotionEvent ev<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token keyword">return</span> dragHelper<span class="token punctuation">.</span><span class="token function">shouldInterceptTouchEvent</span><span class="token punctuation">(</span>ev<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token punctuation">}</span>
+
+    <span class="token annotation punctuation">@Override</span>
+    <span class="token keyword">public</span> <span class="token keyword">boolean</span> <span class="token function">onTouchEvent</span><span class="token punctuation">(</span>MotionEvent event<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        dragHelper<span class="token punctuation">.</span><span class="token function">processTouchEvent</span><span class="token punctuation">(</span>event<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">return</span> <span class="token boolean">true</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>布局文件</p>
+<pre class="line-numbers language-xml"><code class="language-xml">     <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>com.viewdraghelper.NSLayout</span>
+        <span class="token attr-name"><span class="token namespace">android:</span>layout_width</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>match_parent<span class="token punctuation">"</span></span>
+        <span class="token attr-name"><span class="token namespace">android:</span>layout_height</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>match_parent<span class="token punctuation">"</span></span><span class="token punctuation">></span></span>
+
+        <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>View</span>
+            <span class="token attr-name"><span class="token namespace">android:</span>layout_width</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>80dp<span class="token punctuation">"</span></span>
+            <span class="token attr-name"><span class="token namespace">android:</span>layout_height</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>80dp<span class="token punctuation">"</span></span>
+            <span class="token attr-name"><span class="token namespace">android:</span>clickable</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>true<span class="token punctuation">"</span></span>
+            <span class="token attr-name"><span class="token namespace">android:</span>background</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>@color/colorPrimary<span class="token punctuation">"</span></span><span class="token punctuation">/></span></span>
+
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>com.viewdraghelper.NSLayout</span><span class="token punctuation">></span></span>
+<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>结果发现设置clickable= true确实是没法拖动这个View。原因是因为clickable = true会导致这个View在ACTION_DOWN事件发生的时候就把事件接手了，当然了，由于后续事件还是要先经过NSLayout的onInterceptTouchEvent也就是说还会走shouldInterceptTouchEvent。而前面说过可以通过覆写<br>ViewDragHelper.CallBack的getViewHorizontalDragRange和getViewVerticalDragRange任意一个方法返回大于0的数值就可以解决这个问题。这样能解决的道理很简单，当返回了大于0的数值后，最后在MOVE事件来临的时候会触发后续的逻辑将mDragState置为STATE_DRAGGING，导致最后shouldInterceptTouchEvent返回true，直接拦截了后续事件，View只能接收到一个Cancel事件结束。</p>
+<p>那么从事件分发的角度来说，其实也可以解决，其实这个问题和RecyclerView的Item点击情况有点像，当DOWN事件发生，如果没有Move，直接UP就会点击Item,如果发生了Move就会滚动RecyclerView这中情形下的item 点击和这里的View设置了clickable = true接收了事件是一样的，RecyclerView的滚动和View被拖动是一样，可以一一对应起来。只不过RecyclerView可以处理好是自己内部处理得好。这里我们可以这样处理，当DOWN事件发生的时候，我们copy这个DOWN事件保存起来，如果后续有Move事件，那么说明是要拖动View，把之前保存的DOWN手动分发给ViewDragpHelper，走拖动逻辑。</p>
+<p>修改之后的NSLayout代码只改变了一点：</p>
+<pre class="line-numbers language-java"><code class="language-java">    <span class="token keyword">private</span> MotionEvent downEv<span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">@Override</span>
+    <span class="token keyword">public</span> <span class="token keyword">boolean</span> <span class="token function">onInterceptTouchEvent</span><span class="token punctuation">(</span>MotionEvent ev<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>ev<span class="token punctuation">.</span><span class="token function">getAction</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">==</span> MotionEvent<span class="token punctuation">.</span>ACTION_DOWN<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            downEv <span class="token operator">=</span> MotionEvent<span class="token punctuation">.</span><span class="token function">obtain</span><span class="token punctuation">(</span>ev<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token keyword">if</span> <span class="token punctuation">(</span>ev<span class="token punctuation">.</span><span class="token function">getAction</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">==</span> MotionEvent<span class="token punctuation">.</span>ACTION_MOVE<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span>downEv <span class="token operator">!=</span> null<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                <span class="token function">onTouchEvent</span><span class="token punctuation">(</span>downEv<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                downEv <span class="token operator">=</span> null<span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span>
+        <span class="token keyword">return</span> dragHelper<span class="token punctuation">.</span><span class="token function">shouldInterceptTouchEvent</span><span class="token punctuation">(</span>ev<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token punctuation">}</span>
+<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>思路很简单，就是保存DOWN事件，后续发生Move，就认为是要拖动View，把之前保存的DOWN事件重放一遍，让ViewDragHelper认为是一次完整的事件流。<br>这样处理同样也可以解决问题。UltraPtr这个库里面就有很多地方像这样手动分发事件。</p>
+]]></content>
+      
+        
+        <tags>
+            
+            <tag> Android </tag>
+            
+            <tag> ViewDragHelper </tag>
+            
+            <tag> 拖动 </tag>
+            
+        </tags>
+        
+    </entry>
+    
+    <entry>
       <title><![CDATA[ConstraintLayout]]></title>
       <url>/2018/08/24/ConstraintLayout/</url>
       <content type="html"></content>
@@ -1419,9 +1518,9 @@
         
         <tags>
             
-            <tag> Android </tag>
-            
             <tag> Gradle </tag>
+            
+            <tag> Android </tag>
             
         </tags>
         
@@ -1691,9 +1790,9 @@
         
         <tags>
             
-            <tag> RecyclerView LayoutManager LinearLayoutManager </tag>
-            
             <tag> Android </tag>
+            
+            <tag> RecyclerView LayoutManager LinearLayoutManager </tag>
             
         </tags>
         
