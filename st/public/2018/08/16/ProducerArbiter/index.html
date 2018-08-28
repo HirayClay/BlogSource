@@ -79,7 +79,7 @@
 
 <ul class="dropdown-menu dropdown" >
     <li class="nav-dropdown-list">
-        <a class="archive-link" href="/archives/2018/08/">August 2018<span class="archive-count">5</span></a></li><li class="nav-dropdown-list"><a class="archive-link" href="/archives/2018/04/">April 2018<span class="archive-count">3</span></a></li><li class="nav-dropdown-list"><a class="archive-link" href="/archives/2018/01/">January 2018<span class="archive-count">4</span></a></li><li class="nav-dropdown-list"><a class="archive-link" href="/archives/2017/12/">December 2017<span class="archive-count">1</span></a></li><li class="nav-dropdown-list"><a class="archive-link" href="/archives/2017/09/">September 2017<span class="archive-count">2</span></a>
+        <a class="archive-link" href="/archives/2018/08/">August 2018<span class="archive-count">6</span></a></li><li class="nav-dropdown-list"><a class="archive-link" href="/archives/2018/04/">April 2018<span class="archive-count">3</span></a></li><li class="nav-dropdown-list"><a class="archive-link" href="/archives/2018/01/">January 2018<span class="archive-count">4</span></a></li><li class="nav-dropdown-list"><a class="archive-link" href="/archives/2017/12/">December 2017<span class="archive-count">1</span></a></li><li class="nav-dropdown-list"><a class="archive-link" href="/archives/2017/09/">September 2017<span class="archive-count">2</span></a>
     </li>
 </ul>
 <!--categories-->
@@ -113,18 +113,18 @@
   <div id="content-inner">
     
 <article id="post">
-  <div class="post-page-title"  style="background-color:#26A69A;background-image:url(/images/random/vateral-14.png)" >
+  <div class="post-page-title"  style="background-color:#26A69A;background-image:url(/images/random/vateral-6.png)" >
   <h2>ProducerArbiter</h2>
     
-  <p>作者:hirayclay &nbsp&nbsp 发布于:<time datetime="2018-08-16T06:32:41.000Z">
+  <p>作者:hirayclay &nbsp&nbsp 发布于:<time datetime="2018-08-16T06:11:56.000Z">
           2018-08-16
     </time>
   </p>
     
   </div>
   <div class="post-page-content">
-  <h3 id="Producer并不是一层不变"><a href="#Producer并不是一层不变" class="headerlink" title="Producer并不是一层不变"></a>Producer并不是一层不变</h3><p>前面说过Subscriber可以通过setProducer设置Producer，而且这个方法也是支持并发调用的，意味着我们的Producer是可能不断变化的————换个说法————我们的数据源可能会改变。关于Producer的逻辑看这个<a href="/2018/08/15/RxJava中的-Producer/" title="RxJava中的 Producer">RxJava中的 Producer</a>。但是那篇文章没有提到的是，如果我们的Producer在中途改变了，会发生什么情况。举个例子(这个例子实际来自RxJava开发者的一篇进阶<a href="https://blog.piasy.com/AdvancedRxJava/2016/07/02/operator-concurrency-primitives-7/" target="_blank" rel="external">博文</a>)：</p>
-<p>给定两个Observable,希望观察第一个Observable，当一个Observable结束之后，观察第二个Observable，第二个Observable结束了，那么才会结束,自定义了一个TheObserve操作符</p>
+  <h3 id="Producer并不是一层不变"><a href="#Producer并不是一层不变" class="headerlink" title="Producer并不是一层不变"></a>Producer并不是一层不变</h3><p>前面说过Subscriber可以通过setProducer设置Producer，而且这个方法也是支持并发调用的，意味着我们的Producer是可能不断变化的————换个说法————我们的数据源可能会改变。关于Producer的逻辑看这个<a href="/2018/08/15/RxJava中的-Producer/" title="RxJava中的 Producer">RxJava中的 Producer</a>。但是那篇文章没有提到的是，如果我们的Producer在中途改变了，会发生什么情况。举个例子(这个例子实际来自RxJava开发者的一篇进阶<a href="https://blog.piasy.com/AdvancedRxJava/2016/07/02/operator-concurrency-primitives-7/" target="_blank" rel="external">博文</a>)。这个系列的文章真的非常不错，能够看到很多我们不会注意到的问题，也可以窥见早期RxJava实现上的一些影子，对于进一步理解Rx帮助很大。</p>
+<p>给定两个Observable,希望观察第一个Observable，当一个Observable结束之后，观察第二个Observable，第二个Observable结束了，那么才会结束,自定义了一个TheObserve操作符：</p>
 <pre class="line-numbers language-java"><code class="language-java">    <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">final</span> <span class="token keyword">class</span> <span class="token class-name">ThenObserve</span><span class="token operator">&lt;</span>T<span class="token operator">></span> <span class="token keyword">implements</span> <span class="token class-name">Observable<span class="token punctuation">.</span>Operator</span><span class="token operator">&lt;</span>T<span class="token punctuation">,</span> T<span class="token operator">></span> <span class="token punctuation">{</span>
         <span class="token keyword">final</span> Observable<span class="token operator">&lt;</span><span class="token operator">?</span> <span class="token keyword">extends</span> <span class="token class-name">T</span><span class="token operator">></span> other<span class="token punctuation">;</span>
         <span class="token keyword">public</span> <span class="token function">ThenObserve</span><span class="token punctuation">(</span>Observable<span class="token operator">&lt;</span><span class="token operator">?</span> <span class="token keyword">extends</span> <span class="token class-name">T</span><span class="token operator">></span> other<span class="token punctuation">)</span> <span class="token punctuation">{</span>
@@ -163,9 +163,222 @@
 
     ts<span class="token punctuation">.</span><span class="token function">getOnNextEvents</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">forEach</span><span class="token punctuation">(</span>System<span class="token punctuation">.</span>out<span class="token operator">:</span><span class="token operator">:</span>println<span class="token punctuation">)</span><span class="token punctuation">;</span>
 <span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-<p>结果输出了1到30一共30个数字，并不像预想的先输出1-10 然后输出剩下的11-20 一共20个数字。问题出在Subscriber上。</p>
-<p>我们知道Subscriber可以向上游请求数据，如果没有设置Producer，内部有个requested计数器会将这个请求先保存起来，待到调用了setProducer的时候会把请求传递到上游。<br>而问题在于这个计数器只负责累计计数，并不会在请求已经到达的时候，减去已经完成的请求。那么在这个例子导致的问题就是第一个range(1,10)发出了10个数后，紧接着数据源变成了range(11,90),此时这个range(11,90)依然得到这个 数值为20个requested ，所以依然发射了 20个数字，所以最后导致一共产生了30个数据。那么应对这种数据源发生变化的场景我们需要用到ProducerArbiter。</p>
-<p>？？emitLoop 实际使用underlying producer在发射数据？？ProducerArbiter实际是完善了Subscriber只能累加已经产生的请求，而不能减去已经生产的请求而导致同一个请求，在生产者变化的情况下，请求会被执行两次，而ProducerArbiter做了加法减法计数两项工作。</p>
+<p>结果输出了1到30一共30个数字，并不像预想的先输出1-10 然后输出剩下的11-20 一共20个数字。<br>我们知道Subscriber可以向上游请求数据，如果没有设置Producer，内部有个requested计数器会将这个请求先保存起来，待到调用了setProducer的时候会把请求传递到上游。<br>而问题在于这个计数器只负责累计计数，并不会在请求已经到达的时候，减去已经完成的请求。那么在这个例子导致的问题就是第一个range(1,10)发出了10个数后，紧接着数据源变成了range(11,90),此时这个range(11,90)依然得到这个 数值为20的requested计数器 ，所以依然发射了 20个数字，所以最后导致一共产生了30个数据。那么应对这种数据源发生变化的场景我们需要用到ProducerArbiter。<br><!-- @import "[TOC]" {cmd="toc" depthFrom=1 depthTo=6 orderedList=false} --></p>
+<p>先修改这个例子，让ProducerArbiter正确的发挥作用，首先，ProducerArbiter的作用是作为中间枢纽，充当上下游的Producer，Producer发生改变对于上下游是透明的。</p>
+<p>修改后：</p>
+<pre class="line-numbers language-java"><code class="language-java">    <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">final</span> <span class="token keyword">class</span> <span class="token class-name">ThenObserve</span><span class="token operator">&lt;</span>T<span class="token operator">></span> <span class="token keyword">implements</span> <span class="token class-name">Observable<span class="token punctuation">.</span>Operator</span><span class="token operator">&lt;</span>T<span class="token punctuation">,</span> T<span class="token operator">></span> <span class="token punctuation">{</span>
+        <span class="token keyword">final</span> Observable<span class="token operator">&lt;</span><span class="token operator">?</span> <span class="token keyword">extends</span> <span class="token class-name">T</span><span class="token operator">></span> other<span class="token punctuation">;</span>
+
+        <span class="token keyword">public</span> <span class="token function">ThenObserve</span><span class="token punctuation">(</span>Observable<span class="token operator">&lt;</span><span class="token operator">?</span> <span class="token keyword">extends</span> <span class="token class-name">T</span><span class="token operator">></span> other<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            <span class="token keyword">this</span><span class="token punctuation">.</span>other <span class="token operator">=</span> other<span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token annotation punctuation">@Override</span>
+        <span class="token keyword">public</span> Subscriber<span class="token operator">&lt;</span><span class="token operator">?</span> <span class="token keyword">super</span> T<span class="token operator">></span> <span class="token function">call</span><span class="token punctuation">(</span>Subscriber<span class="token operator">&lt;</span><span class="token operator">?</span> <span class="token keyword">super</span> T<span class="token operator">></span> child<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            ProducerArbiter arbiter <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">ProducerArbiter</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+            Subscriber<span class="token operator">&lt;</span>T<span class="token operator">></span> parent <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">Subscriber</span><span class="token operator">&lt;</span>T<span class="token operator">></span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                <span class="token annotation punctuation">@Override</span>
+                <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">onNext</span><span class="token punctuation">(</span>T t<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                    child<span class="token punctuation">.</span><span class="token function">onNext</span><span class="token punctuation">(</span>t<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                    arbiter<span class="token punctuation">.</span><span class="token function">produced</span><span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                <span class="token punctuation">}</span>
+
+                <span class="token annotation punctuation">@Override</span>
+                <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">onError</span><span class="token punctuation">(</span>Throwable e<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                    arbiter<span class="token punctuation">.</span><span class="token function">setProducer</span><span class="token punctuation">(</span>null<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                    child<span class="token punctuation">.</span><span class="token function">onError</span><span class="token punctuation">(</span>e<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                <span class="token punctuation">}</span>
+
+                <span class="token annotation punctuation">@Override</span>
+                <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">onCompleted</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                    arbiter<span class="token punctuation">.</span><span class="token function">setProducer</span><span class="token punctuation">(</span>null<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                    <span class="token comment" spellcheck="true">//产生新的subscriber用来接收producer的改变</span>
+                    DelegatingSubscriber<span class="token operator">&lt;</span>T<span class="token operator">></span> subscriber <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">DelegatingSubscriber</span><span class="token operator">&lt;</span><span class="token operator">></span><span class="token punctuation">(</span>child<span class="token punctuation">,</span> arbiter<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                    child<span class="token punctuation">.</span><span class="token function">add</span><span class="token punctuation">(</span>subscriber<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                    other<span class="token punctuation">.</span><span class="token function">unsafeSubscribe</span><span class="token punctuation">(</span>subscriber<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                <span class="token punctuation">}</span>
+
+                <span class="token annotation punctuation">@Override</span>
+                <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">setProducer</span><span class="token punctuation">(</span>Producer p<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                    arbiter<span class="token punctuation">.</span><span class="token function">setProducer</span><span class="token punctuation">(</span>p<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                <span class="token punctuation">}</span>
+            <span class="token punctuation">}</span><span class="token punctuation">;</span>
+            child<span class="token punctuation">.</span><span class="token function">add</span><span class="token punctuation">(</span>parent<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            child<span class="token punctuation">.</span><span class="token function">setProducer</span><span class="token punctuation">(</span>arbiter<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token keyword">return</span> parent<span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+
+
+    <span class="token keyword">static</span> <span class="token keyword">class</span> <span class="token class-name">DelegatingSubscriber</span><span class="token operator">&lt;</span>T<span class="token operator">></span> <span class="token keyword">extends</span> <span class="token class-name">Subscriber</span><span class="token operator">&lt;</span>T<span class="token operator">></span><span class="token punctuation">{</span>
+        Subscriber<span class="token operator">&lt;</span><span class="token operator">?</span> <span class="token keyword">super</span>  T<span class="token operator">></span> actual<span class="token punctuation">;</span>
+        ProducerArbiter arbiter<span class="token punctuation">;</span>
+
+
+        <span class="token keyword">public</span> <span class="token function">DelegatingSubscriber</span><span class="token punctuation">(</span>Subscriber<span class="token operator">&lt;</span><span class="token operator">?</span> <span class="token keyword">super</span>  T<span class="token operator">></span> downstream<span class="token punctuation">,</span>ProducerArbiter arbiter<span class="token punctuation">)</span><span class="token punctuation">{</span>
+            <span class="token keyword">this</span><span class="token punctuation">.</span>actual <span class="token operator">=</span> downstream<span class="token punctuation">;</span>
+            <span class="token keyword">this</span><span class="token punctuation">.</span>arbiter <span class="token operator">=</span> arbiter<span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token annotation punctuation">@Override</span>
+        <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">onCompleted</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            arbiter<span class="token punctuation">.</span><span class="token function">setProducer</span><span class="token punctuation">(</span>null<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token keyword">this</span><span class="token punctuation">.</span>actual<span class="token punctuation">.</span><span class="token function">onCompleted</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token annotation punctuation">@Override</span>
+        <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">onError</span><span class="token punctuation">(</span>Throwable e<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            arbiter<span class="token punctuation">.</span><span class="token function">setProducer</span><span class="token punctuation">(</span>null<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token keyword">this</span><span class="token punctuation">.</span>actual<span class="token punctuation">.</span><span class="token function">onError</span><span class="token punctuation">(</span>e<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token annotation punctuation">@Override</span>
+        <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">onNext</span><span class="token punctuation">(</span>T o<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            <span class="token keyword">this</span><span class="token punctuation">.</span>actual<span class="token punctuation">.</span><span class="token function">onNext</span><span class="token punctuation">(</span>o<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            arbiter<span class="token punctuation">.</span><span class="token function">produced</span><span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token annotation punctuation">@Override</span>
+        <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">setProducer</span><span class="token punctuation">(</span>Producer p<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+           arbiter<span class="token punctuation">.</span><span class="token function">setProducer</span><span class="token punctuation">(</span>p<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>从最后的实现看，child Subscriber是消费者，需要从第一个range Observable和other Observable两处获取数据，由于数据源是不稳定的，所以child实际上只设置了ProducerArbiter一个Producer，实际Producer的切换交给了ProducerArbiter，这样数据源切换对于child 来说是透明的。<br>这里具体这做了三件事情：给child 设置ProducerArbiter；ProducerArbiter在数据源发生改变时切换到其他Producer；数据产生时调用producer(n)更新计数。</p>
+<h3 id="ProducerArbiter-实现原理"><a href="#ProducerArbiter-实现原理" class="headerlink" title="ProducerArbiter 实现原理"></a>ProducerArbiter 实现原理</h3><p>如果是我们来实现ProducerArbiter以此满足上面 例子中的需要，其实我们要做的就是每次请求到来的时候增加计数，当有事件被消耗的时候减少计数，同时支持串行访问，从这样的角度我们再去看ProducerArbiter的源码，可能就会比较容易理解。一共有四个方法：</p>
+<ul>
+<li><code>java public void request(long n)</code></li>
+<li><code>java public void setProducer(Producer newProducer)</code></li>
+<li><code>java  public void produced(long n)</code></li>
+<li><code>java  public void emitLoop()</code></li>
+</ul>
+<h4 id="request方法："><a href="#request方法：" class="headerlink" title="request方法："></a>request方法：</h4><pre class="line-numbers language-java"><code class="language-java"><span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">request</span><span class="token punctuation">(</span><span class="token keyword">long</span> n<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>n <span class="token operator">&lt;</span> <span class="token number">0</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            <span class="token keyword">throw</span> <span class="token keyword">new</span> <span class="token class-name">IllegalArgumentException</span><span class="token punctuation">(</span><span class="token string">"n >= 0 required"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>n <span class="token operator">==</span> <span class="token number">0</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            <span class="token keyword">return</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token keyword">synchronized</span> <span class="token punctuation">(</span><span class="token keyword">this</span><span class="token punctuation">)</span> <span class="token punctuation">{</span> 
+            <span class="token keyword">if</span> <span class="token punctuation">(</span>emitting<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                missedRequested <span class="token operator">+=</span> n<span class="token punctuation">;</span> <span class="token comment" spellcheck="true">//1</span>
+                <span class="token keyword">return</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+            emitting <span class="token operator">=</span> <span class="token boolean">true</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token keyword">boolean</span> skipFinal <span class="token operator">=</span> <span class="token boolean">false</span><span class="token punctuation">;</span> <span class="token comment" spellcheck="true">//2</span>
+        <span class="token keyword">try</span> <span class="token punctuation">{</span>
+            <span class="token keyword">long</span> r <span class="token operator">=</span> requested<span class="token punctuation">;</span>
+            <span class="token keyword">long</span> u <span class="token operator">=</span> r <span class="token operator">+</span> n<span class="token punctuation">;</span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span>u <span class="token operator">&lt;</span> <span class="token number">0</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                u <span class="token operator">=</span> Long<span class="token punctuation">.</span>MAX_VALUE<span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+            requested <span class="token operator">=</span> u<span class="token punctuation">;</span>
+
+            Producer p <span class="token operator">=</span> currentProducer<span class="token punctuation">;</span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span>p <span class="token operator">!=</span> null<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                p<span class="token punctuation">.</span><span class="token function">request</span><span class="token punctuation">(</span>n<span class="token punctuation">)</span><span class="token punctuation">;</span><span class="token comment" spellcheck="true">//3</span>
+            <span class="token punctuation">}</span>
+
+            <span class="token function">emitLoop</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span><span class="token comment" spellcheck="true">//4</span>
+            skipFinal <span class="token operator">=</span> <span class="token boolean">true</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span> <span class="token keyword">finally</span> <span class="token punctuation">{</span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token operator">!</span>skipFinal<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                <span class="token keyword">synchronized</span> <span class="token punctuation">(</span><span class="token keyword">this</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                    emitting <span class="token operator">=</span> <span class="token boolean">false</span><span class="token punctuation">;</span>
+                <span class="token punctuation">}</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>1) 用missedRequested保存没有处理的请求，因为并发访问的原因，此时可能有其他线程在调用，所以先保存起来。</p>
+<p>2) skipFinal 实际上的作用是决定是否跳过最后的finally代码块（当然实际并不能跳过，finally代码块的作用只是为了预防emitLoop方法发生错误而没有安全的将emitting 置为false，导致一直阻塞后续的请求）。</p>
+<p>3) 这里必须详细解释为什么是请求n，而不是requested。因为下游发出数据请求的时候，这些请求积累是发生在每个Producer上的，此刻的n实际是下游在向currentProducer请求，而requested是之前积累的，可能是之前的missedProducer上积累的请求，更加详细的逻辑会在emitLoop中。</p>
+<p>4) emitLoop的作用实际就是真正调用实际的Producer 请求数据的过程。代码能够走到这一步说明emitting = false,此时没有来自其他线程的数据请求，执行emitLoop漏循环处理已经积累的请求。</p>
+<h4 id="setProducer方法"><a href="#setProducer方法" class="headerlink" title="setProducer方法"></a>setProducer方法</h4><pre class="line-numbers language-java"><code class="language-java">    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">setProducer</span><span class="token punctuation">(</span>Producer newProducer<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token keyword">synchronized</span> <span class="token punctuation">(</span><span class="token keyword">this</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span>emitting<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                missedProducer <span class="token operator">=</span> newProducer <span class="token operator">==</span> null <span class="token operator">?</span> NULL_PRODUCER <span class="token operator">:</span> newProducer<span class="token punctuation">;</span><span class="token comment" spellcheck="true">//1</span>
+                <span class="token keyword">return</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+            emitting <span class="token operator">=</span> <span class="token boolean">true</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token keyword">boolean</span> skipFinal <span class="token operator">=</span> <span class="token boolean">false</span><span class="token punctuation">;</span>
+        <span class="token keyword">try</span> <span class="token punctuation">{</span>
+            currentProducer <span class="token operator">=</span> newProducer<span class="token punctuation">;</span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span>newProducer <span class="token operator">!=</span> null<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                newProducer<span class="token punctuation">.</span><span class="token function">request</span><span class="token punctuation">(</span>requested<span class="token punctuation">)</span><span class="token punctuation">;</span><span class="token comment" spellcheck="true">//2</span>
+            <span class="token punctuation">}</span>
+
+            <span class="token function">emitLoop</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            skipFinal <span class="token operator">=</span> <span class="token boolean">true</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span> <span class="token keyword">finally</span> <span class="token punctuation">{</span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token operator">!</span>skipFinal<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                <span class="token keyword">synchronized</span> <span class="token punctuation">(</span><span class="token keyword">this</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                    emitting <span class="token operator">=</span> <span class="token boolean">false</span><span class="token punctuation">;</span>
+                <span class="token punctuation">}</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>1) 如果传入的newProducer是null则会把missedProducer设置成NULL_PRODUCER，可以说是一个标记，在emitLoop中作为判断条件使用。<br>2) 请求了requested个，貌似和前面request方法的<strong>//3</strong>处有点不同，这是因为如果切换了Producer，那么之前的Producer没有生产的数据，再也不会有机会产生，所以这些<br>积累下的数据就应该全部交给新的Prodcuer来产生。</p>
+<h4 id="emitLoop方法"><a href="#emitLoop方法" class="headerlink" title="emitLoop方法"></a>emitLoop方法</h4><pre class="line-numbers language-java"><code class="language-java"><span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">emitLoop</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token punctuation">;</span><span class="token punctuation">;</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            <span class="token keyword">long</span> localRequested<span class="token punctuation">;</span>
+            <span class="token keyword">long</span> localProduced<span class="token punctuation">;</span>
+            Producer localProducer<span class="token punctuation">;</span>
+            <span class="token keyword">synchronized</span> <span class="token punctuation">(</span><span class="token keyword">this</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                localRequested <span class="token operator">=</span> missedRequested<span class="token punctuation">;</span><span class="token comment" spellcheck="true">//1</span>
+                localProduced <span class="token operator">=</span> missedProduced<span class="token punctuation">;</span>
+                localProducer <span class="token operator">=</span> missedProducer<span class="token punctuation">;</span>
+                <span class="token keyword">if</span> <span class="token punctuation">(</span>localRequested <span class="token operator">==</span> 0L
+                        <span class="token operator">&amp;&amp;</span> localProduced <span class="token operator">==</span> 0L
+                        <span class="token operator">&amp;&amp;</span> localProducer <span class="token operator">==</span> null<span class="token punctuation">)</span> <span class="token punctuation">{</span><span class="token comment" spellcheck="true">//2</span>
+                    emitting <span class="token operator">=</span> <span class="token boolean">false</span><span class="token punctuation">;</span>
+                    <span class="token keyword">return</span><span class="token punctuation">;</span>
+                <span class="token punctuation">}</span>
+                missedRequested <span class="token operator">=</span> 0L<span class="token punctuation">;</span><span class="token comment" spellcheck="true">//3</span>
+                missedProduced <span class="token operator">=</span> 0L<span class="token punctuation">;</span>
+                missedProducer <span class="token operator">=</span> null<span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+
+            <span class="token keyword">long</span> r <span class="token operator">=</span> requested<span class="token punctuation">;</span>
+
+            <span class="token keyword">if</span> <span class="token punctuation">(</span>r <span class="token operator">!=</span> Long<span class="token punctuation">.</span>MAX_VALUE<span class="token punctuation">)</span> <span class="token punctuation">{</span><span class="token comment" spellcheck="true">//1</span>
+                <span class="token keyword">long</span> u <span class="token operator">=</span> r <span class="token operator">+</span> localRequested<span class="token punctuation">;</span>
+                <span class="token keyword">if</span> <span class="token punctuation">(</span>u <span class="token operator">&lt;</span> <span class="token number">0</span> <span class="token operator">||</span> u <span class="token operator">==</span> Long<span class="token punctuation">.</span>MAX_VALUE<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                    r <span class="token operator">=</span> Long<span class="token punctuation">.</span>MAX_VALUE<span class="token punctuation">;</span>
+                    requested <span class="token operator">=</span> r<span class="token punctuation">;</span>
+                <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token punctuation">{</span>
+                    <span class="token keyword">long</span> v <span class="token operator">=</span> u <span class="token operator">-</span> localProduced<span class="token punctuation">;</span>
+                    <span class="token keyword">if</span> <span class="token punctuation">(</span>v <span class="token operator">&lt;</span> <span class="token number">0</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                        <span class="token keyword">throw</span> <span class="token keyword">new</span> <span class="token class-name">IllegalStateException</span><span class="token punctuation">(</span><span class="token string">"more produced than requested"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                    <span class="token punctuation">}</span>
+                    r <span class="token operator">=</span> v<span class="token punctuation">;</span>
+                    requested <span class="token operator">=</span> v<span class="token punctuation">;</span>
+                <span class="token punctuation">}</span>
+            <span class="token punctuation">}</span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span>localProducer <span class="token operator">!=</span> null<span class="token punctuation">)</span> <span class="token punctuation">{</span><span class="token comment" spellcheck="true">//2</span>
+                <span class="token keyword">if</span> <span class="token punctuation">(</span>localProducer <span class="token operator">==</span> NULL_PRODUCER<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                    currentProducer <span class="token operator">=</span> null<span class="token punctuation">;</span>
+                <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token punctuation">{</span>
+                    currentProducer <span class="token operator">=</span> localProducer<span class="token punctuation">;</span>
+                    localProducer<span class="token punctuation">.</span><span class="token function">request</span><span class="token punctuation">(</span>r<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                <span class="token punctuation">}</span>
+            <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token punctuation">{</span><span class="token comment" spellcheck="true">//3</span>
+                Producer p <span class="token operator">=</span> currentProducer<span class="token punctuation">;</span>
+                <span class="token keyword">if</span> <span class="token punctuation">(</span>p <span class="token operator">!=</span> null <span class="token operator">&amp;&amp;</span> localRequested <span class="token operator">!=</span> 0L<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                    p<span class="token punctuation">.</span><span class="token function">request</span><span class="token punctuation">(</span>localRequested<span class="token punctuation">)</span><span class="token punctuation">;</span>
+                <span class="token punctuation">}</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>emitLoop方法比较长，直接看真的容易看不懂，我也是最开始卡在这里很久，后来发现最好是用单一Producer的角度分析，从简化的角度理解，如果此时一直都只有一个Producer,不存在Producer切换，那么可以认为此时的ProducerArbiter实际是一个普通的Producer，这里的emitLoop方法实际上处理的只是missedRequested，实际上和RangeProducer(以RangeProducer为例)的背压处理情况下的slowPath方法极度相似————不停的处理积累的请求直到把积累的请求完全处理完。</p>
+<p>此时再来看emitLoop，其实只是多了Producer切换的情况，其实如果我们把Producer也看作是一种数据————没错！我们把Producer也看成是request一样，好比某处下游正在请求数据一样，只不过这个请求是请求切换Producer。对应请求数据，我们是寻找合适的Producer把请求发出去，对应Producer我们则应该是寻找合适的数据去发射。 此时我们再来看emitLoop的逻辑，退出漏循环的条件是所有的请求都处理完毕(准确说是：积累的请求处理完、该切换的Producer切换完毕以及累计处理完的事件计数完毕)，这里很容易理解。</p>
+<p>1) 整个if语句块实际是进行已经消费的事件进行减法计数，减去已经消费的事件数</p>
+<p>2) 如果localProducer（实际是missedProducer）不为空，表示存在Producer切换，不过还得继续判断（因为切换的时候可能是传的一个为null的Producer）,如果localProducer == NULL_PRODUCER实际上就是把当前的Producer设置成null了也就是不设置数据源，不然的话 切换数据源，并且把累计的请求处理完。</p>
+<p>至此整个ProducerArbiter分析完毕，但是ProducerArbiter存在的问题是，没有保证事件是串行发射的，举个例子，此时前面的request正在被Producer A执行，正在发射事件给subscriber，但是紧接着切换了Producer B,此时Producer B也开始给Subscriber发射事件，这样导致的结果就是事件发射是并行的，必然会发生问题，这也显然不是我们想要的。其实我们这时候就需要ProducerObserverArbiter，看名字就是知道它还是个观察者。</p>
 
   </div>
   <!--评论块-->
@@ -191,7 +404,7 @@
 <div class="post-toc-btn"><i class="material-icons">format_list_numbered</i></div>
 <div class="post-toc-none"><p>(无)</p></div>
 <div class="post-toc-box">
-    <ol class="post-toc"><li class="post-toc-item post-toc-level-3"><a class="post-toc-link" href="#Producer并不是一层不变"><span class="post-toc-number">1.</span> <span class="post-toc-text">Producer并不是一层不变</span></a></li></ol>
+    <ol class="post-toc"><li class="post-toc-item post-toc-level-3"><a class="post-toc-link" href="#Producer并不是一层不变"><span class="post-toc-number">1.</span> <span class="post-toc-text">Producer并不是一层不变</span></a></li><li class="post-toc-item post-toc-level-3"><a class="post-toc-link" href="#ProducerArbiter-实现原理"><span class="post-toc-number">2.</span> <span class="post-toc-text">ProducerArbiter 实现原理</span></a><ol class="post-toc-child"><li class="post-toc-item post-toc-level-4"><a class="post-toc-link" href="#request方法："><span class="post-toc-number">2.1.</span> <span class="post-toc-text">request方法：</span></a></li><li class="post-toc-item post-toc-level-4"><a class="post-toc-link" href="#setProducer方法"><span class="post-toc-number">2.2.</span> <span class="post-toc-text">setProducer方法</span></a></li><li class="post-toc-item post-toc-level-4"><a class="post-toc-link" href="#emitLoop方法"><span class="post-toc-number">2.3.</span> <span class="post-toc-text">emitLoop方法</span></a></li></ol></li></ol>
 </div>
 <!--<div class="post-back"><i class="material-icons">arrow_back</i></div>-->
 <script type="text/javascript">

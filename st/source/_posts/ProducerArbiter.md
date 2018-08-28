@@ -1,13 +1,17 @@
 ---
 title: ProducerArbiter
-date: 2018-08-16 14:32:41
-tags:
+date: 2018-08-16 14:11:56
+tags: 
+    - RxJava 
+    - Producer
+    - ProducerArbiter
 ---
 
-### Producer并不是一层不变
-前面说过Subscriber可以通过setProducer设置Producer，而且这个方法也是支持并发调用的，意味着我们的Producer是可能不断变化的————换个说法————我们的数据源可能会改变。关于Producer的逻辑看这个{% post_link RxJava中的-Producer %}。但是那篇文章没有提到的是，如果我们的Producer在中途改变了，会发生什么情况。举个例子(这个例子实际来自RxJava开发者的一篇进阶[博文](https://blog.piasy.com/AdvancedRxJava/2016/07/02/operator-concurrency-primitives-7/))：
 
-给定两个Observable,希望观察第一个Observable，当一个Observable结束之后，观察第二个Observable，第二个Observable结束了，那么才会结束,自定义了一个TheObserve操作符
+### Producer并不是一层不变
+前面说过Subscriber可以通过setProducer设置Producer，而且这个方法也是支持并发调用的，意味着我们的Producer是可能不断变化的————换个说法————我们的数据源可能会改变。关于Producer的逻辑看这个{% post_link RxJava中的-Producer %}。但是那篇文章没有提到的是，如果我们的Producer在中途改变了，会发生什么情况。举个例子(这个例子实际来自RxJava开发者的一篇进阶[博文](https://blog.piasy.com/AdvancedRxJava/2016/07/02/operator-concurrency-primitives-7/))。这个系列的文章真的非常不错，能够看到很多我们不会注意到的问题，也可以窥见早期RxJava实现上的一些影子，对于进一步理解Rx帮助很大。
+
+给定两个Observable,希望观察第一个Observable，当一个Observable结束之后，观察第二个Observable，第二个Observable结束了，那么才会结束,自定义了一个TheObserve操作符：
 ```java
     public static final class ThenObserve<T> implements Observable.Operator<T, T> {
         final Observable<? extends T> other;
@@ -47,10 +51,9 @@ tags:
 
     ts.getOnNextEvents().forEach(System.out::println);
 ```
-结果输出了1到30一共30个数字，并不像预想的先输出1-10 然后输出剩下的11-20 一共20个数字。问题出在Subscriber上。
-
+结果输出了1到30一共30个数字，并不像预想的先输出1-10 然后输出剩下的11-20 一共20个数字。
 我们知道Subscriber可以向上游请求数据，如果没有设置Producer，内部有个requested计数器会将这个请求先保存起来，待到调用了setProducer的时候会把请求传递到上游。
-而问题在于这个计数器只负责累计计数，并不会在请求已经到达的时候，减去已经完成的请求。那么在这个例子导致的问题就是第一个range(1,10)发出了10个数后，紧接着数据源变成了range(11,90),此时这个range(11,90)依然得到这个 数值为20个requested ，所以依然发射了 20个数字，所以最后导致一共产生了30个数据。那么应对这种数据源发生变化的场景我们需要用到ProducerArbiter。
+而问题在于这个计数器只负责累计计数，并不会在请求已经到达的时候，减去已经完成的请求。那么在这个例子导致的问题就是第一个range(1,10)发出了10个数后，紧接着数据源变成了range(11,90),此时这个range(11,90)依然得到这个 数值为20的requested计数器 ，所以依然发射了 20个数字，所以最后导致一共产生了30个数据。那么应对这种数据源发生变化的场景我们需要用到ProducerArbiter。
 <!-- @import "[TOC]" {cmd="toc" depthFrom=1 depthTo=6 orderedList=false} -->
 
 

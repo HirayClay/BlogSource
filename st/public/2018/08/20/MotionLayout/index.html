@@ -79,7 +79,7 @@
 
 <ul class="dropdown-menu dropdown" >
     <li class="nav-dropdown-list">
-        <a class="archive-link" href="/archives/2018/08/">August 2018<span class="archive-count">5</span></a></li><li class="nav-dropdown-list"><a class="archive-link" href="/archives/2018/04/">April 2018<span class="archive-count">3</span></a></li><li class="nav-dropdown-list"><a class="archive-link" href="/archives/2018/01/">January 2018<span class="archive-count">4</span></a></li><li class="nav-dropdown-list"><a class="archive-link" href="/archives/2017/12/">December 2017<span class="archive-count">1</span></a></li><li class="nav-dropdown-list"><a class="archive-link" href="/archives/2017/09/">September 2017<span class="archive-count">2</span></a>
+        <a class="archive-link" href="/archives/2018/08/">August 2018<span class="archive-count">6</span></a></li><li class="nav-dropdown-list"><a class="archive-link" href="/archives/2018/04/">April 2018<span class="archive-count">3</span></a></li><li class="nav-dropdown-list"><a class="archive-link" href="/archives/2018/01/">January 2018<span class="archive-count">4</span></a></li><li class="nav-dropdown-list"><a class="archive-link" href="/archives/2017/12/">December 2017<span class="archive-count">1</span></a></li><li class="nav-dropdown-list"><a class="archive-link" href="/archives/2017/09/">September 2017<span class="archive-count">2</span></a>
     </li>
 </ul>
 <!--categories-->
@@ -113,7 +113,7 @@
   <div id="content-inner">
     
 <article id="post">
-  <div class="post-page-title"  style="background-color:#26A69A;background-image:url(/images/random/vateral-1.png)" >
+  <div class="post-page-title"  style="background-color:#26A69A;background-image:url(/images/random/vateral-12.png)" >
   <h2>MotionLayout</h2>
     
   <p>作者:hirayclay &nbsp&nbsp 发布于:<time datetime="2018-08-20T01:57:59.000Z">
@@ -124,8 +124,8 @@
   </div>
   <div class="post-page-content">
   <h3 id="传统动画的问题"><a href="#传统动画的问题" class="headerlink" title="传统动画的问题"></a>传统动画的问题</h3><p>以前的动画————比如View动画和属性动画我们其实无法真正的很好的控制动画，因为动画的时间是给定的，而不是根据用户的操作去表现给定的动画。<br>简单来说，传统的动画一旦运行起来我们就无法控制，我们能做的只是何时开始，何时结束，或者何时取消，对于已经运行中的动画我们无法控制。那么有些情况我们就没法做的更好，比如用户在滑动列表时，其他控件如何响应用户的滑动操作并做出对应的动画————当然我们并不是做不到，而是不太优雅，如果能够配置并定义好这些东西，那么再好不过。MotionLayout做的就是这些。</p>
-<h3 id="MotionLayout实现折叠动画"><a href="#MotionLayout实现折叠动画" class="headerlink" title="MotionLayout实现折叠动画"></a>MotionLayout实现折叠动画</h3><p>以前为了实现一个不那么复杂的滑动折叠效果，需要CoordinatorLayout CollapsingToolBar的帮助才能做到。而且布局文件里面的内容显得有些过于冗长。下面使用MotionLayout实现下面这个效果</p>
-<p><img src="https://gitee.com/cjjmyj/StackLayoutManager/raw/master/static/hrreverse.gif" width="400px" height="250px"></p>
+<h3 id="MotionLayout实现折叠动画"><a href="#MotionLayout实现折叠动画" class="headerlink" title="MotionLayout实现折叠动画"></a>MotionLayout实现折叠动画</h3><p>以前为了实现一个不那么复杂的滑动折叠效果，需要CoordinatorLayout CollapsingToolBar的帮助才能做到。而且布局文件里面的内容显得有些过于冗长。下面使用MotionLayout实现下面这个效果。</p>
+<p><img src="https://raw.githubusercontent.com/HirayClay/draft/master/motionglayout_rotation.gif" width="200" height="400px"></p>
 <p>布局十分简单：</p>
 <pre class="line-numbers language-xml"><code class="language-xml"><span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>android.support.design.widget.CoordinatorLayout</span> <span class="token attr-name"><span class="token namespace">xmlns:</span>android</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>http://schemas.android.com/apk/res/android<span class="token punctuation">"</span></span>
     <span class="token attr-name"><span class="token namespace">android:</span>id</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>@+id/content<span class="token punctuation">"</span></span>
@@ -180,7 +180,7 @@
 
 <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>com.google.androidstudio.motionlayoutexample.utils.CollapsibleToolbar</span><span class="token punctuation">></span></span>
 <span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-<p>没有任何的嵌套，只是简单利用了ConstraintLayout的特性把控件放到合适的位置。可能会奇怪，并没有看到任何与动画有关的东西，难道是用Java代码在控制吗？并不是，动画的入口实则在layoutDescription属性上，这个属性的值指向一个xml文件：</p>
+<p>没有任何的嵌套，只是简单利用了ConstraintLayout(MotiongLayout继承自ConstraintLayout)的特性把控件放到合适的位置。可能会奇怪，并没有看到任何与动画有关的东西，难道是用Java代码在控制吗？并不是，动画的入口实则在layoutDescription属性上，这个属性决定了MotiongLayout和ConstraintLayout的不同，这个属性的值指向一个xml文件：</p>
 <pre class="line-numbers language-xml"><code class="language-xml">    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>MotionScene</span>
     <span class="token attr-name"><span class="token namespace">xmlns:</span>android</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>http://schemas.android.com/apk/res/android<span class="token punctuation">"</span></span>
     <span class="token attr-name"><span class="token namespace">xmlns:</span>motion</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>http://schemas.android.com/apk/res-auto<span class="token punctuation">"</span></span><span class="token punctuation">></span></span>
@@ -232,7 +232,51 @@
 
 <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>MotionScene</span><span class="token punctuation">></span></span>
 <span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-<p>代码其实不多，最外边是MotiongScene，包含了所有动画需要的元素。Transition是</p>
+<p>代码其实不多，最外边是MotiongScene，包含了所有动画需要的元素。Transition是:</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">Attributes</th>
+<th style="text-align:right">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">android:id</td>
+<td style="text-align:right">The id of the Transition</td>
+</tr>
+<tr>
+<td style="text-align:left">constraintSetStart</td>
+<td style="text-align:right">ConstraintSet to be used as the start constraints or a layout file to get the constraint from</td>
+</tr>
+<tr>
+<td style="text-align:left">constraintSetEnd</td>
+<td style="text-align:right">ConstraintSet to be used as the end constraints or a layout file to get the constraint from</td>
+</tr>
+<tr>
+<td style="text-align:left">interpolator</td>
+</tr>
+<tr>
+<td style="text-align:left">duration</td>
+</tr>
+<tr>
+<td style="text-align:left">staggered</td>
+<td style="text-align:right">float: a quick way to stagger the objects moving</td>
+</tr>
+<tr>
+<td style="text-align:left">&lt;OnSwipe&gt;</td>
+<td style="text-align:right">Adds support for touch handling (optional)</td>
+</tr>
+<tr>
+<td style="text-align:left">&lt;OnClick&gt;</td>
+<td style="text-align:right">Adds support for triggering transition (optional)</td>
+</tr>
+<tr>
+<td style="text-align:left">&lt;KeyFrameSet&gt;</td>
+<td style="text-align:right">Describes a set of Key object which modify the animation between constraint sets.</td>
+</tr>
+</tbody>
+</table>
 
   </div>
   <!--评论块-->
@@ -241,6 +285,10 @@
 </article>
 <nav class="post-nav">
   <!-- Prev Nav -->
+    
+  <a href="/2018/08/24/ConstraintLayout/" id="post_nav-newer" class="post-nav-content prev-content">
+      新篇
+  </a>
     
 
 

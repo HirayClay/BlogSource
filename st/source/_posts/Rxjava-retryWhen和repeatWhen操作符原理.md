@@ -103,13 +103,13 @@ retryWhen方法实际返回的是这个
 
 继续看内部逻辑（省略一些过于细节的细节[不然语言又是罗哩罗嗦]，需要对源码比较熟悉，最好先看一遍）：
     
-    ```java
+```java
    final Subject<Notification<?>, Notification<?>> terminals = BehaviorSubject.<Notification<?>>create().toSerialized();
    final Subscriber<Notification<?>> dummySubscriber = Subscribers.empty();
         // subscribe immediately so the last emission will be replayed to the next
         // subscriber (which is the one we care about)
    terminals.subscribe(dummySubscriber);
-    ```
+```
 被 这三句话坑了很久，还让我看了BehaviorSubject的源码很久，发现这几句就是废话，有没有都行。看他的注释，意思是为了后面我们关心的subscriber能够获取到最近的那个事件，先订阅再说。（实际上最近的那个事件根本不存在）
 
 
