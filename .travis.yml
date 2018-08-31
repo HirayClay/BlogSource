@@ -1,0 +1,29 @@
+language: node_js
+
+nodejs:
+  - '6.11.2'
+
+
+install: 
+  - npm install hexo@beta -g
+  - npm install
+
+script:
+  - cd st
+  - hexo clean
+  - hexo d -g
+# after_script:
+#   - cd ./public
+#   - git init
+#   - git config user.name "hirayclay"
+#   - git config user.email "2425875132@qq.com"
+#   - git add .
+#   - git commit -m "update post"
+#   - git push --force --quiet "http://HirayClay.github.io" master
+
+env:
+ global:
+   - GH_REF: git@github.com:HirayClay/HirayClay.github.io.git
+
+
+    
