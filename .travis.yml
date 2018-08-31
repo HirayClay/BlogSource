@@ -5,8 +5,8 @@ nodejs:
 
 
 install: 
-  - npm install hexo@3.3.8 -g
-  - npm install
+- npm install -g hexo
+- npm install -g hexo-cli
 
 script:
   - cd st
